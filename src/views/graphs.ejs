@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('partials/head') %>
+  <title>Graphs — Alumni Analytics</title>
+</head>
+<body>
+
+  <%- include('partials/navbar', { page: 'graphs' }) %>
+
+  <main class="main-content">
+
+    <!-- Page header -->
+    <div class="page-header">
+      <h1>Data Visualisation</h1>
+      <p>Interactive charts showing graduate outcomes and skills trends</p>
+    </div>
+
+    <!-- Error banner -->
+    <% if (error) { %>
+      <div class="alert alert-error"><%= error %></div>
+    <% } %>
+
+    <!-- Skills Gap — Bar chart -->
+    <div class="chart-section">
+      <h2>Skills Gap Analysis</h2>
+      <p class="chart-desc">Certifications acquired post-graduation reveal curriculum deficiencies</p>
+      <div class="chart-card">
+        <h3>Top 10 Post-Graduation Certifications</h3>
+        <canvas id="certificationsChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Trends — Line chart -->
+    <div class="chart-section">
+      <h2>Emerging Technology Adoption Trends</h2>
+      <p class="chart-desc">Certification growth over graduation years</p>
+      <div class="chart-card">
+        <canvas id="trendsChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Employment — Pie + Doughnut side by side -->
+    <div class="chart-section">
+      <h2>Graduate Outcomes Analysis</h2>
+      <p class="chart-desc">Where our graduates work and what roles they hold</p>
+      <div class="charts-row">
+        <div class="chart-card">
+          <h3>Employment by Industry Sector</h3>
+          <canvas id="industryChart"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>Most Common Job Titles</h3>
+          <canvas id="jobTitlesChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top Employers — Horizontal bar chart -->
+    <div class="chart-section">
+      <h2>Top Employers</h2>
+      <p class="chart-desc">Organisations employing the most graduates</p>
+      <div class="chart-card">
+        <canvas id="employersChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Short Courses — Radar chart -->
+    <div class="chart-section">
+      <h2>Post-Graduation Course Categories</h2>
+      <p class="chart-desc">Distribution of short courses completed after graduation</p>
+      <div class="chart-card">
+        <canvas id="coursesChart"></canvas>
+      </div>
+    </div>
+
+  </main>
+
+  <%- include('partials/footer') %>
+
+  <!-- Chart.js from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Pass EJS data to client-side JS as JSON objects -->
+<script>
+  const certData = JSON.parse('<%- JSON.stringify(certifications || null) %>');
+  const trendsData = JSON.parse('<%- JSON.stringify(trends || null) %>');
+  const employmentData = JSON.parse('<%- JSON.stringify(employment || null) %>');
+  const coursesData = JSON.parse('<%- JSON.stringify(courses || null) %>');
+</script>
+
+  <!-- Graphs charts script -->
+  <script src="/js/graphs.js"></script>
+
+</body>
+</html>
