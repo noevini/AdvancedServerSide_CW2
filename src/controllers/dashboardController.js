@@ -21,6 +21,7 @@ const getLogin = (req, res) => {
 };
 
 // POST /login — validate credentials and create session
+
 const postLogin = (req, res) => {
   const { username, password } = req.body;
 
