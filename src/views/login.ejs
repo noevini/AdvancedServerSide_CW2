@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('partials/head') %>
+  <title>Login — Alumni Analytics</title>
+</head>
+<body class="login-page">
+
+  <div class="login-container">
+
+    <!-- Header -->
+    <div class="login-header">
+      <h1>🎓 Alumni Analytics</h1>
+      <p>University of Westminster — Staff Portal</p>
+    </div>
+
+    <!-- Error message (shown if credentials are wrong) -->
+    <% if (error) { %>
+      <div class="alert alert-error">
+        <%= error %>
+      </div>
+    <% } %>
+
+    <!-- Login form — POSTs to /login -->
+    <form action="/login" method="POST" class="login-form">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input
+          type="text"
+          id="username"
+          name="username"
+          placeholder="Enter your username"
+          required
+          autocomplete="username"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input
+          type="password"
+          id="password"
+          name="password"
+          placeholder="Enter your password"
+          required
+          autocomplete="current-password"
+        />
+      </div>
+
+      <button type="submit" class="btn-login">Sign In</button>
+    </form>
+
+  </div>
+
+</body>
+</html>
