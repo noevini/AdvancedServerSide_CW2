@@ -1,0 +1,27 @@
+<%# Reusable navigation bar — included at the top of every protected page %>
+<nav class="navbar">
+  <div class="navbar-brand">
+    <span>🎓 Alumni Analytics</span>
+  </div>
+  <ul class="navbar-links">
+    <li>
+      <a href="/" class="<%= locals.page === 'dashboard' ? 'active' : '' %>"
+        >Dashboard</a
+      >
+    </li>
+    <li>
+      <a href="/graphs" class="<%= locals.page === 'graphs' ? 'active' : '' %>"
+        >Graphs</a
+      >
+    </li>
+    <li>
+      <a href="/alumni" class="<%= locals.page === 'alumni' ? 'active' : '' %>"
+        >Alumni</a
+      >
+    </li>
+  </ul>
+  <div class="navbar-user">
+    <span>👤 <%= user.username %></span>
+    <a href="/logout" class="btn-logout">Logout</a>
+  </div>
+</nav>
