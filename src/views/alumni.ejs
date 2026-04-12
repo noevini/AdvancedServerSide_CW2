@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('partials/head') %>
+  <title>Alumni — Alumni Analytics</title>
+</head>
+<body>
+
+  <%- include('partials/navbar', { page: 'alumni' }) %>
+
+  <main class="main-content">
+
+    <!-- Page header -->
+    <div class="page-header">
+      <h1>Alumni Directory</h1>
+      <p>View and filter all tracked graduates</p>
+    </div>
+
+    <!-- Error banner -->
+    <% if (error) { %>
+      <div class="alert alert-error"><%= error %></div>
+    <% } %>
+
+    <!-- Search and filter controls -->
+    <div class="filters">
+      <input
+        type="text"
+        id="searchInput"
+        placeholder="Search by name..."
+        class="filter-input"
+      />
+    </div>
+
+    <!-- Alumni table -->
+    <div class="table-container">
+      <table id="alumniTable" class="data-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Degree</th>
+            <th>Year</th>
+            <th>Employer</th>
+            <th>Job Title</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (alumni && alumni.length > 0) { %>
+            <% alumni.forEach(function(a) { %>
+              <tr>
+                <td><%= a.full_name || '—' %></td>
+                <td><%= a.email || '—' %></td>
+                <td><%= a.degree_name || '—' %></td>
+                <td><%= a.year_completed || '—' %></td>
+                <td><%= a.company_name || '—' %></td>
+                <td><%= a.job_title || '—' %></td>
+              </tr>
+            <% }) %>
+          <% } else { %>
+            <tr>
+              <td colspan="6" class="no-data">No alumni data available</td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+
+  <%- include('partials/footer') %>
+
+  <!-- Alumni search/filter script -->
+  <script src="/js/alumni.js"></script>
+
+</body>
+</html>
