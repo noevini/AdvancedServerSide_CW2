@@ -3,6 +3,7 @@ const helmet = require("helmet");
 const session = require("express-session");
 const cookieParser = require("cookie-parser");
 const path = require("path");
+const rateLimit = require("express-rate-limit");
 
 const routes = require("./routes");
 
@@ -42,6 +43,25 @@ app.use(
     },
   }),
 );
+
+// General rate limit — 100 requests per 15 minutes for all routes
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Strict rate limit — 10 requests per 15 minutes for login only
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use(generalLimiter);
+app.use("/login", loginLimiter);
 
 // Routes
 app.use("/", routes);
