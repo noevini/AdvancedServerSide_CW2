@@ -10,9 +10,32 @@ const apiHeaders = () => ({
   Authorization: `Bearer ${API_KEY}`,
 });
 
-// Helper — fetch a URL with a short timeout, returns data or throws
-const fetchOrMock = (url) =>
-  axios.get(url, { headers: apiHeaders(), timeout: 500 });
+// Try the API with a short timeout; return fallback if it fails
+const fetchOrMock = async (url, fallback) => {
+  try {
+    const res = await axios.get(url, { headers: apiHeaders(), timeout: 500 });
+    return res.data;
+  } catch {
+    return fallback;
+  }
+};
+
+// Fallback data used when the API is unavailable
+const mockData = {
+  summary: {
+    totalAlumni: 0,
+    totalCertifications: 0,
+    employmentRate: 0,
+  },
+  certifications: { labels: [], values: [] },
+  trends: { labels: [], datasets: [] },
+  employment: {
+    industries: { labels: [], values: [] },
+    jobTitles: { labels: [], values: [] },
+    employers: { labels: [], values: [] },
+  },
+  courses: { labels: [], values: [] },
+};
 
 // ── LOGIN ─────────────────────────────────────────────────
 
@@ -50,88 +73,55 @@ const logout = (req, res) => {
 
 // ── DASHBOARD ─────────────────────────────────────────────
 
-// GET / — fetch summary stats from CW1 and render dashboard
+// GET / — fetch dashboard data from API, fall back to mock if unavailable
 const getDashboard = async (req, res) => {
-  try {
-    const [profilesRes, certificationsRes, employmentRes] = await Promise.all([
-      fetchOrMock(`${API_URL}/analytics/summary`),
-      fetchOrMock(`${API_URL}/analytics/certifications`),
-      fetchOrMock(`${API_URL}/analytics/employment`),
-    ]);
+  const [summary, certifications, employment] = await Promise.all([
+    fetchOrMock(`${API_URL}/analytics/summary`, mockData.summary),
+    fetchOrMock(`${API_URL}/analytics/certifications`, mockData.certifications),
+    fetchOrMock(`${API_URL}/analytics/employment`, mockData.employment),
+  ]);
 
-    res.render("dashboard", {
-      user: req.session.user,
-      summary: profilesRes.data,
-      certifications: certificationsRes.data,
-      employment: employmentRes.data,
-      error: null,
-    });
-  } catch (err) {
-    console.error("Dashboard fetch error:", err.message);
-    res.render("dashboard", {
-      user: req.session.user,
-      summary: null,
-      certifications: null,
-      employment: null,
-      error: "Could not load data from API. Is the CW1 server running?",
-    });
-  }
+  res.render("dashboard", {
+    user: req.session.user,
+    summary,
+    certifications,
+    employment,
+    error: null,
+  });
 };
 
 // ── GRAPHS ────────────────────────────────────────────────
 
-// GET /graphs — fetch all analytics data needed for all charts
+// GET /graphs — fetch charts data from API, fall back to mock if unavailable
 const getGraphs = async (req, res) => {
-  try {
-    const [certificationsRes, trendsRes, employmentRes, coursesRes] =
-      await Promise.all([
-        fetchOrMock(`${API_URL}/analytics/certifications`),
-        fetchOrMock(`${API_URL}/analytics/trends`),
-        fetchOrMock(`${API_URL}/analytics/employment`),
-        fetchOrMock(`${API_URL}/analytics/short-courses`),
-      ]);
+  const [certifications, trends, employment, courses] = await Promise.all([
+    fetchOrMock(`${API_URL}/analytics/certifications`, mockData.certifications),
+    fetchOrMock(`${API_URL}/analytics/trends`, mockData.trends),
+    fetchOrMock(`${API_URL}/analytics/employment`, mockData.employment),
+    fetchOrMock(`${API_URL}/analytics/short-courses`, mockData.courses),
+  ]);
 
-    res.render("graphs", {
-      user: req.session.user,
-      certifications: certificationsRes.data,
-      trends: trendsRes.data,
-      employment: employmentRes.data,
-      courses: coursesRes.data,
-      error: null,
-    });
-  } catch (err) {
-    console.error("Graphs fetch error:", err.message);
-    res.render("graphs", {
-      user: req.session.user,
-      certifications: null,
-      trends: null,
-      employment: null,
-      courses: null,
-      error: "Could not load data from API. Is the CW1 server running?",
-    });
-  }
+  res.render("graphs", {
+    user: req.session.user,
+    certifications,
+    trends,
+    employment,
+    courses,
+    error: null,
+  });
 };
 
 // ── ALUMNI ────────────────────────────────────────────────
 
-// GET /alumni — fetch alumni list for the filterable table
+// GET /alumni — fetch alumni list from API, fall back to empty array
 const getAlumni = async (req, res) => {
-  try {
-    const response = await fetchOrMock(`${API_URL}/analytics/alumni`);
+  const alumni = await fetchOrMock(`${API_URL}/analytics/alumni`, []);
 
-    res.render("alumni", {
-      user: req.session.user,
-      alumni: response.data,
-      error: null,
-    });
-  } catch (err) {
-    console.error("Alumni fetch error:", err.message);
-    res.render("alumni", {
-      user: req.session.user,
-      alumni: [],
-      error: "Could not load alumni data from API.",
-    });
-  }
+  res.render("alumni", {
+    user: req.session.user,
+    alumni,
+    error: null,
+  });
 };
 
 module.exports = {
