@@ -19,5 +19,7 @@ router.get("/logout", dashboardController.logout);
 router.get("/", requireAuth, dashboardController.getDashboard);
 router.get("/graphs", requireAuth, dashboardController.getGraphs);
 router.get("/alumni", requireAuth, dashboardController.getAlumni);
+router.get("/export/csv", requireAuth, dashboardController.exportCSV);
+router.get("/export/pdf", requireAuth, dashboardController.exportPDF);
 
 module.exports = router;

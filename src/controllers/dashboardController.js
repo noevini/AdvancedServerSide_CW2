@@ -61,6 +61,13 @@ const mockData = {
     labels: ["Cloud Computing", "Data Science", "Cybersecurity", "Web Development", "AI/ML", "DevOps"],
     values: [85, 72, 65, 58, 48, 41],
   },
+  alumni: [
+    { full_name: "Alice Johnson", email: "alice@example.com", degree_name: "BSc Computer Science", year_completed: 2021, company_name: "Google", job_title: "Software Engineer" },
+    { full_name: "Ben Carter", email: "ben@example.com", degree_name: "BSc Data Science", year_completed: 2020, company_name: "Amazon", job_title: "Data Analyst" },
+    { full_name: "Clara Smith", email: "clara@example.com", degree_name: "BSc Cybersecurity", year_completed: 2022, company_name: "Microsoft", job_title: "Security Analyst" },
+    { full_name: "David Lee", email: "david@example.com", degree_name: "BSc Software Engineering", year_completed: 2021, company_name: "Accenture", job_title: "DevOps Engineer" },
+    { full_name: "Emma Brown", email: "emma@example.com", degree_name: "BSc AI", year_completed: 2023, company_name: "IBM", job_title: "ML Engineer" },
+  ],
 };
 
 // ── LOGIN ─────────────────────────────────────────────────
@@ -141,13 +148,38 @@ const getGraphs = async (req, res) => {
 
 // GET /alumni — fetch alumni list from API, fall back to empty array
 const getAlumni = async (req, res) => {
-  const alumni = await fetchOrMock(`${API_URL}/analytics/alumni`, []);
+  const alumni = await fetchOrMock(`${API_URL}/analytics/alumni`, mockData.alumni);
 
   res.render("alumni", {
     user: req.session.user,
     alumni,
     error: null,
   });
+};
+
+// ── EXPORT ────────────────────────────────────────────────
+
+// GET /export/csv — stream alumni data as a CSV file download
+const exportCSV = async (_req, res) => {
+  const alumni = await fetchOrMock(`${API_URL}/analytics/alumni`, mockData.alumni);
+
+  const header = "Name,Email,Degree,Year,Employer,Job Title\n";
+  const rows = alumni.map((a) =>
+    [a.full_name, a.email, a.degree_name, a.year_completed, a.company_name, a.job_title]
+      .map((v) => `"${(v || "").toString().replace(/"/g, '""')}"`)
+      .join(",")
+  );
+
+  res.setHeader("Content-Type", "text/csv");
+  res.setHeader("Content-Disposition", "attachment; filename=alumni.csv");
+  res.send(header + rows.join("\n"));
+};
+
+// GET /export/pdf — render a print-friendly alumni table
+const exportPDF = async (_req, res) => {
+  const alumni = await fetchOrMock(`${API_URL}/analytics/alumni`, mockData.alumni);
+
+  res.render("export-pdf", { alumni });
 };
 
 module.exports = {
@@ -157,4 +189,6 @@ module.exports = {
   getDashboard,
   getGraphs,
   getAlumni,
+  exportCSV,
+  exportPDF,
 };

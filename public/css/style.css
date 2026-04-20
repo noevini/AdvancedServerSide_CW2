@@ -324,6 +324,28 @@ body {
   border: 1px solid #fecaca;
 }
 
+/* ── Export buttons ───────────────────────────────────── */
+.export-bar {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.btn-export {
+  padding: 0.5rem 1.1rem;
+  background-color: #c8102e;
+  color: white;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 0.2s;
+}
+
+.btn-export:hover {
+  background-color: #a50d25;
+}
+
 /* ── Footer ───────────────────────────────────────────── */
 .footer {
   text-align: center;
