@@ -10,6 +10,10 @@ const apiHeaders = () => ({
   Authorization: `Bearer ${API_KEY}`,
 });
 
+// Helper — fetch a URL with a short timeout, returns data or throws
+const fetchOrMock = (url) =>
+  axios.get(url, { headers: apiHeaders(), timeout: 500 });
+
 // ── LOGIN ─────────────────────────────────────────────────
 
 // GET /login — render the login form
@@ -50,11 +54,9 @@ const logout = (req, res) => {
 const getDashboard = async (req, res) => {
   try {
     const [profilesRes, certificationsRes, employmentRes] = await Promise.all([
-      axios.get(`${API_URL}/analytics/summary`, { headers: apiHeaders() }),
-      axios.get(`${API_URL}/analytics/certifications`, {
-        headers: apiHeaders(),
-      }),
-      axios.get(`${API_URL}/analytics/employment`, { headers: apiHeaders() }),
+      fetchOrMock(`${API_URL}/analytics/summary`),
+      fetchOrMock(`${API_URL}/analytics/certifications`),
+      fetchOrMock(`${API_URL}/analytics/employment`),
     ]);
 
     res.render("dashboard", {
@@ -83,14 +85,10 @@ const getGraphs = async (req, res) => {
   try {
     const [certificationsRes, trendsRes, employmentRes, coursesRes] =
       await Promise.all([
-        axios.get(`${API_URL}/analytics/certifications`, {
-          headers: apiHeaders(),
-        }),
-        axios.get(`${API_URL}/analytics/trends`, { headers: apiHeaders() }),
-        axios.get(`${API_URL}/analytics/employment`, { headers: apiHeaders() }),
-        axios.get(`${API_URL}/analytics/short-courses`, {
-          headers: apiHeaders(),
-        }),
+        fetchOrMock(`${API_URL}/analytics/certifications`),
+        fetchOrMock(`${API_URL}/analytics/trends`),
+        fetchOrMock(`${API_URL}/analytics/employment`),
+        fetchOrMock(`${API_URL}/analytics/short-courses`),
       ]);
 
     res.render("graphs", {
@@ -119,9 +117,7 @@ const getGraphs = async (req, res) => {
 // GET /alumni — fetch alumni list for the filterable table
 const getAlumni = async (req, res) => {
   try {
-    const response = await axios.get(`${API_URL}/analytics/alumni`, {
-      headers: apiHeaders(),
-    });
+    const response = await fetchOrMock(`${API_URL}/analytics/alumni`);
 
     res.render("alumni", {
       user: req.session.user,

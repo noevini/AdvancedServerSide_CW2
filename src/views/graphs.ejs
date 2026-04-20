@@ -83,10 +83,10 @@
 
   <!-- Pass EJS data to client-side JS as JSON objects -->
 <script>
-  const certData = JSON.parse('<%- JSON.stringify(certifications || null) %>');
-  const trendsData = JSON.parse('<%- JSON.stringify(trends || null) %>');
-  const employmentData = JSON.parse('<%- JSON.stringify(employment || null) %>');
-  const coursesData = JSON.parse('<%- JSON.stringify(courses || null) %>');
+  const certData = JSON.parse('<%- JSON.stringify(certifications || {"labels":[],"values":[]}) %>');
+  const trendsData = JSON.parse('<%- JSON.stringify(trends || {"labels":[],"datasets":[]}) %>');
+  const employmentData = JSON.parse('<%- JSON.stringify(employment || {"industries":{"labels":[],"values":[]},"jobTitles":{"labels":[],"values":[]},"employers":{"labels":[],"values":[]}}) %>');
+  const coursesData = JSON.parse('<%- JSON.stringify(courses || {"labels":[],"values":[]}) %>');
 </script>
 
   <!-- Graphs charts script -->
