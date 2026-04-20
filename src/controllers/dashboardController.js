@@ -23,18 +23,44 @@ const fetchOrMock = async (url, fallback) => {
 // Fallback data used when the API is unavailable
 const mockData = {
   summary: {
-    totalAlumni: 0,
-    totalCertifications: 0,
-    employmentRate: 0,
+    totalAlumni: 248,
+    totalCertifications: 1432,
+    employmentRate: 94,
   },
-  certifications: { labels: [], values: [] },
-  trends: { labels: [], datasets: [] },
+  certifications: {
+    labels: [
+      "AWS Cloud Practitioner", "CompTIA Security+", "Google Analytics",
+      "Docker Certified", "PMP", "Kubernetes (CKA)",
+      "Azure Fundamentals", "Cisco CCNA", "Scrum Master", "Salesforce Admin",
+    ],
+    values: [68, 54, 47, 42, 38, 35, 31, 28, 25, 21],
+  },
+  trends: {
+    labels: ["2019", "2020", "2021", "2022", "2023"],
+    datasets: [
+      { label: "Cloud", data: [12, 18, 28, 42, 55], borderColor: "#3B82F6", backgroundColor: "transparent" },
+      { label: "Security", data: [8, 14, 22, 35, 48], borderColor: "#EF4444", backgroundColor: "transparent" },
+      { label: "DevOps", data: [5, 10, 18, 30, 41], borderColor: "#10B981", backgroundColor: "transparent" },
+    ],
+  },
   employment: {
-    industries: { labels: [], values: [] },
-    jobTitles: { labels: [], values: [] },
-    employers: { labels: [], values: [] },
+    industries: {
+      labels: ["Technology", "Finance", "Healthcare", "Education", "Retail"],
+      values: [45, 20, 15, 12, 8],
+    },
+    jobTitles: {
+      labels: ["Software Engineer", "Data Analyst", "Project Manager", "DevOps Engineer", "UX Designer"],
+      values: [35, 25, 18, 14, 8],
+    },
+    employers: {
+      labels: ["Google", "Amazon", "Microsoft", "Accenture", "IBM"],
+      values: [42, 38, 35, 28, 22],
+    },
   },
-  courses: { labels: [], values: [] },
+  courses: {
+    labels: ["Cloud Computing", "Data Science", "Cybersecurity", "Web Development", "AI/ML", "DevOps"],
+    values: [85, 72, 65, 58, 48, 41],
+  },
 };
 
 // ── LOGIN ─────────────────────────────────────────────────
