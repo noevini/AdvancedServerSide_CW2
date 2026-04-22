@@ -1,5 +1,8 @@
 const axios = require("axios");
 const crypto = require("crypto");
+const bcrypt = require("bcrypt");
+
+const SALT_ROUNDS = 10;
 
 // Base URL and API key for the CW1 backend
 const API_URL = process.env.CW1_API_URL || "http://localhost:3000";
@@ -8,16 +11,15 @@ const API_KEY = process.env.ANALYTICS_API_KEY || "";
 // In-memory user store — seeded with the admin account from env
 // Each entry: { username, email, passwordHash, verified, verifyToken, resetToken }
 const users = new Map();
-const hashPassword = (password) =>
-  crypto.createHash("sha256").update(password).digest("hex");
 
-const initAdminUser = () => {
+const initAdminUser = async () => {
   const username = process.env.DASHBOARD_USERNAME || "admin";
   const password = process.env.DASHBOARD_PASSWORD || "admin123";
+  const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
   users.set(username, {
     username,
     email: "admin@university.ac.uk",
-    passwordHash: hashPassword(password),
+    passwordHash,
     verified: true,
     verifyToken: null,
     resetToken: null,
@@ -115,7 +117,7 @@ const getLogin = (req, res) => {
 };
 
 // POST /login — validate input, verify CSRF token, then check credentials
-const postLogin = (req, res) => {
+const postLogin = async (req, res) => {
   const { username, password, _csrf } = req.body;
 
   // CSRF verification — token in form must match token stored in session
@@ -150,8 +152,9 @@ const postLogin = (req, res) => {
   }
 
   const user = users.get(cleanUsername);
+  const validPassword = user ? await bcrypt.compare(cleanPassword, user.passwordHash) : false;
 
-  if (!user || user.passwordHash !== hashPassword(cleanPassword)) {
+  if (!user || !validPassword) {
     return res.render("login", {
       error: "Invalid username or password.",
       csrfToken: generateCsrfToken(req),
@@ -278,7 +281,7 @@ const getRegister = (req, res) => {
 };
 
 // POST /register — validate input, create user, generate verify token
-const postRegister = (req, res) => {
+const postRegister = async (req, res) => {
   const { username, email, password, _csrf } = req.body;
 
   if (!_csrf || _csrf !== req.session.csrfToken) {
@@ -308,6 +311,13 @@ const postRegister = (req, res) => {
     });
   }
 
+  if (!cleanEmail.endsWith(".ac.uk")) {
+    return res.render("register", {
+      error: "Registration requires a university email address (.ac.uk).",
+      csrfToken: generateCsrfToken(req),
+    });
+  }
+
   if (cleanPassword.length < 8) {
     return res.render("register", {
       error: "Password must be at least 8 characters.",
@@ -323,11 +333,12 @@ const postRegister = (req, res) => {
   }
 
   const verifyToken = crypto.randomBytes(3).toString("hex").toUpperCase();
+  const passwordHash = await bcrypt.hash(cleanPassword, SALT_ROUNDS);
 
   users.set(cleanUsername, {
     username: cleanUsername,
     email: cleanEmail,
-    passwordHash: hashPassword(cleanPassword),
+    passwordHash,
     verified: false,
     verifyToken,
     resetToken: null,
@@ -393,7 +404,7 @@ const getResetPassword = (req, res) => {
 };
 
 // POST /reset-password — two stages: request token, then set new password
-const postResetPassword = (req, res) => {
+const postResetPassword = async (req, res) => {
   const { stage, email, token, password, _csrf } = req.body;
 
   if (!_csrf || _csrf !== req.session.csrfToken) {
@@ -445,7 +456,7 @@ const postResetPassword = (req, res) => {
       });
     }
 
-    user.passwordHash = hashPassword(cleanPassword);
+    user.passwordHash = await bcrypt.hash(cleanPassword, SALT_ROUNDS);
     user.resetToken = null;
     delete req.session.resetEmail;
 
