@@ -27,6 +27,8 @@ const mockData = {
     totalAlumni: 248,
     totalCertifications: 1432,
     employmentRate: 94,
+    criticalGaps: 3,
+    avgTimeToEmployment: 4,
   },
   certifications: {
     labels: [
