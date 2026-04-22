@@ -333,6 +333,7 @@ const postRegister = async (req, res) => {
   }
 
   const verifyToken = crypto.randomBytes(3).toString("hex").toUpperCase();
+  const verifyTokenExpiry = Date.now() + 15 * 60 * 1000; // 15 minutes
   const passwordHash = await bcrypt.hash(cleanPassword, SALT_ROUNDS);
 
   users.set(cleanUsername, {
@@ -341,7 +342,9 @@ const postRegister = async (req, res) => {
     passwordHash,
     verified: false,
     verifyToken,
+    verifyTokenExpiry,
     resetToken: null,
+    resetTokenExpiry: null,
   });
 
   req.session.pendingUser = cleanUsername;
@@ -376,6 +379,14 @@ const postVerifyEmail = (req, res) => {
 
   const user = users.get(username);
 
+  if (Date.now() > user.verifyTokenExpiry) {
+    return res.render("verify-email", {
+      error: "Verification code has expired. Please register again.",
+      token: null,
+      csrfToken: generateCsrfToken(req),
+    });
+  }
+
   if (!token || token.trim().toUpperCase() !== user.verifyToken) {
     return res.render("verify-email", {
       error: "Invalid verification code. Please try again.",
@@ -386,6 +397,7 @@ const postVerifyEmail = (req, res) => {
 
   user.verified = true;
   user.verifyToken = null;
+  user.verifyTokenExpiry = null;
   delete req.session.pendingUser;
   req.session.user = { username };
   res.redirect("/");
@@ -419,6 +431,7 @@ const postResetPassword = async (req, res) => {
     const resetToken = user ? crypto.randomBytes(3).toString("hex").toUpperCase() : null;
     if (user && resetToken) {
       user.resetToken = resetToken;
+      user.resetTokenExpiry = Date.now() + 30 * 60 * 1000; // 30 minutes
       req.session.resetEmail = user.email;
     }
 
@@ -435,9 +448,9 @@ const postResetPassword = async (req, res) => {
     const resetEmail = req.session.resetEmail;
     const user = Array.from(users.values()).find((u) => u.email === resetEmail);
 
-    if (!user || !token || token.trim().toUpperCase() !== user.resetToken) {
+    if (!user || !token || token.trim().toUpperCase() !== user.resetToken || Date.now() > user.resetTokenExpiry) {
       return res.render("reset-password", {
-        error: "Invalid reset code.",
+        error: "Invalid or expired reset code.",
         success: null,
         stage: "confirm",
         resetToken: null,
@@ -458,6 +471,7 @@ const postResetPassword = async (req, res) => {
 
     user.passwordHash = await bcrypt.hash(cleanPassword, SALT_ROUNDS);
     user.resetToken = null;
+    user.resetTokenExpiry = null;
     delete req.session.resetEmail;
 
     return res.render("reset-password", {
