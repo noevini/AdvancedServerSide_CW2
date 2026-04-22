@@ -28,6 +28,19 @@ populateSelect(filterProgramme, "data-degree");
 populateSelect(filterYear, "data-year");
 populateSelect(filterIndustry, "data-industry");
 
+// Keep export links in sync with the current filter state
+function updateExportLinks() {
+  const params = new URLSearchParams();
+  if (searchInput.value) params.set("search", searchInput.value);
+  if (filterProgramme.value) params.set("programme", filterProgramme.value);
+  if (filterYear.value) params.set("year", filterYear.value);
+  if (filterIndustry.value) params.set("industry", filterIndustry.value);
+  const qs = params.toString();
+  const suffix = qs ? "?" + qs : "";
+  document.getElementById("exportCsv").href = "/export/csv" + suffix;
+  document.getElementById("exportPdf").href = "/export/pdf" + suffix;
+}
+
 // Apply all active filters and the search term to the table rows
 function applyFilters() {
   const search = searchInput.value.toLowerCase();
@@ -44,6 +57,7 @@ function applyFilters() {
 
     row.style.display = matchSearch && matchProgramme && matchYear && matchIndustry ? "" : "none";
   });
+  updateExportLinks();
 }
 
 searchInput.addEventListener("input", applyFilters);
@@ -51,7 +65,7 @@ filterProgramme.addEventListener("change", applyFilters);
 filterYear.addEventListener("change", applyFilters);
 filterIndustry.addEventListener("change", applyFilters);
 
-// Reset all filters and show all rows
+// Reset all filters, show all rows, and reset export links
 clearBtn.addEventListener("click", () => {
   searchInput.value = "";
   filterProgramme.value = "";

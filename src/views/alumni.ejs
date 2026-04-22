@@ -21,10 +21,10 @@
       <div class="alert alert-error"><%= error %></div>
     <% } %>
 
-    <!-- Export buttons -->
+    <!-- Export buttons — links updated dynamically to include active filters -->
     <div class="export-bar">
-      <a href="/export/csv" class="btn-export">Export CSV</a>
-      <a href="/export/pdf" class="btn-export" target="_blank">Export PDF</a>
+      <a id="exportCsv" href="/export/csv" class="btn-export">Export CSV</a>
+      <a id="exportPdf" href="/export/pdf" class="btn-export" target="_blank">Export PDF</a>
     </div>
 
     <!-- Search and filter controls -->

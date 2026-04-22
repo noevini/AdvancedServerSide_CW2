@@ -249,9 +249,23 @@ const getAlumni = async (req, res) => {
 
 // ── EXPORT ────────────────────────────────────────────────
 
-// GET /export/csv — stream alumni data as a CSV file download
-const exportCSV = async (_req, res) => {
-  const alumni = await fetchOrMock(`${API_URL}/analytics/alumni`, mockData.alumni);
+// Applies search, programme, year and industry filters to an alumni array
+const applyAlumniFilters = (alumni, query) => {
+  const { search = "", programme = "", year = "", industry = "" } = query;
+  return alumni.filter((a) => {
+    const text = Object.values(a).join(" ").toLowerCase();
+    const matchSearch = !search || text.includes(search.toLowerCase());
+    const matchProgramme = !programme || (a.degree_name || "") === programme;
+    const matchYear = !year || String(a.year_completed) === year;
+    const matchIndustry = !industry || (a.industry || "") === industry;
+    return matchSearch && matchProgramme && matchYear && matchIndustry;
+  });
+};
+
+// GET /export/csv — stream filtered alumni data as a CSV file download
+const exportCSV = async (req, res) => {
+  const all = await fetchOrMock(`${API_URL}/analytics/alumni`, mockData.alumni);
+  const alumni = applyAlumniFilters(all, req.query);
 
   const header = "Name,Email,Degree,Year,Employer,Job Title,Industry\n";
   const rows = alumni.map((a) =>
@@ -265,9 +279,10 @@ const exportCSV = async (_req, res) => {
   res.send(header + rows.join("\n"));
 };
 
-// GET /export/pdf — render a print-friendly alumni table
-const exportPDF = async (_req, res) => {
-  const alumni = await fetchOrMock(`${API_URL}/analytics/alumni`, mockData.alumni);
+// GET /export/pdf — render a print-friendly filtered alumni table
+const exportPDF = async (req, res) => {
+  const all = await fetchOrMock(`${API_URL}/analytics/alumni`, mockData.alumni);
+  const alumni = applyAlumniFilters(all, req.query);
 
   res.render("export-pdf", { alumni });
 };
