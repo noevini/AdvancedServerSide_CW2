@@ -380,6 +380,23 @@ body {
   background-color: #a50d25;
 }
 
+/* ── Download chart button ────────────────────────────── */
+.btn-download {
+  margin-top: 0.75rem;
+  padding: 0.4rem 0.9rem;
+  background: #f4f6f9;
+  color: #555;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-download:hover {
+  background: #e5e7eb;
+}
+
 /* ── Footer ───────────────────────────────────────────── */
 .footer {
   text-align: center;

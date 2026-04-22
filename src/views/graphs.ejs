@@ -28,6 +28,7 @@
       <div class="chart-card">
         <h3>Top 10 Post-Graduation Certifications</h3>
         <canvas id="certificationsChart"></canvas>
+        <button class="btn-download" onclick="downloadChart('certificationsChart', 'certifications')">Download</button>
       </div>
     </div>
 
@@ -37,6 +38,7 @@
       <p class="chart-desc">Certification growth over graduation years</p>
       <div class="chart-card">
         <canvas id="trendsChart"></canvas>
+        <button class="btn-download" onclick="downloadChart('trendsChart', 'trends')">Download</button>
       </div>
     </div>
 
@@ -48,10 +50,12 @@
         <div class="chart-card">
           <h3>Employment by Industry Sector</h3>
           <canvas id="industryChart"></canvas>
+          <button class="btn-download" onclick="downloadChart('industryChart', 'industry')">Download</button>
         </div>
         <div class="chart-card">
           <h3>Most Common Job Titles</h3>
           <canvas id="jobTitlesChart"></canvas>
+          <button class="btn-download" onclick="downloadChart('jobTitlesChart', 'job-titles')">Download</button>
         </div>
       </div>
     </div>
@@ -62,6 +66,7 @@
       <p class="chart-desc">Organisations employing the most graduates</p>
       <div class="chart-card">
         <canvas id="employersChart"></canvas>
+        <button class="btn-download" onclick="downloadChart('employersChart', 'employers')">Download</button>
       </div>
     </div>
 
@@ -71,15 +76,17 @@
       <p class="chart-desc">Distribution of short courses completed after graduation</p>
       <div class="chart-card">
         <canvas id="coursesChart"></canvas>
+        <button class="btn-download" onclick="downloadChart('coursesChart', 'courses')">Download</button>
       </div>
     </div>
 
-    <!-- Geographic Distribution — Horizontal bar chart -->
+    <!-- Geographic Distribution — Radar chart -->
     <div class="chart-section">
       <h2>Geographic Distribution</h2>
       <p class="chart-desc">Cities where graduates are currently employed</p>
       <div class="chart-card">
         <canvas id="geographicChart"></canvas>
+        <button class="btn-download" onclick="downloadChart('geographicChart', 'geographic')">Download</button>
       </div>
     </div>
 

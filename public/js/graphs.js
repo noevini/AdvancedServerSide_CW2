@@ -1,6 +1,15 @@
 // Graphs page — renders all Chart.js charts using data from the API
 // All data variables are passed from the EJS template
 
+// Downloads a chart canvas as a PNG image file
+function downloadChart(canvasId, filename) {
+  const canvas = document.getElementById(canvasId);
+  const link = document.createElement("a");
+  link.download = filename + ".png";
+  link.href = canvas.toDataURL("image/png");
+  link.click();
+}
+
 const chartColors = [
   "#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6",
   "#06B6D4", "#F97316", "#EC4899", "#6B7280",
