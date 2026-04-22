@@ -2,7 +2,7 @@
 
 ## Overview
 
-A server-side web dashboard built with Node.js and Express that consumes the **Alumni Influencers API (CW1)** to display graduate outcome data for university staff. It visualises certifications, employment trends, and alumni profiles through interactive charts and a filterable directory. When the CW1 API is unavailable, the dashboard falls back to sample mock data so the interface remains functional.
+A server-side web dashboard built with Node.js and Express that consumes the **Alumni Influencers API (CW1)** to display graduate outcome data for university staff. It visualises certifications, employment trends, and alumni profiles through interactive charts and a filterable alumni directory.
 
 ---
 
@@ -19,7 +19,7 @@ AdvancedServerSide_CW2/
 │       └── graphs.js               # Chart.js chart rendering with loading states
 ├── src/
 │   ├── controllers/
-│   │   └── dashboardController.js  # All route handlers, auth, user store, mock data
+│   │   └── dashboardController.js  # All route handlers, auth, user store, API calls
 │   ├── routes/
 │   │   └── index.js                # Express router with auth guard middleware
 │   ├── views/
@@ -49,7 +49,7 @@ AdvancedServerSide_CW2/
 ### Prerequisites
 
 - Node.js 18+
-- CW1 Alumni Influencers API running (optional — falls back to mock data if unavailable)
+- CW1 Alumni Influencers API running on `http://localhost:3000`
 
 ### Steps
 
@@ -78,7 +78,7 @@ AdvancedServerSide_CW2/
 5. **Open the app**
    Navigate to [http://localhost:4000](http://localhost:4000)
 
-> The CW1 API server must be running on `http://localhost:3000` for live data. If unavailable, the dashboard loads with sample mock data automatically — no configuration needed.
+> The CW1 API server must be running on `http://localhost:3000`. If unreachable, the dashboard shows an error banner on each page.
 
 ---
 
@@ -118,7 +118,7 @@ AdvancedServerSide_CW2/
 
 This dashboard connects to the **CW1 Alumni Influencers API** using bearer token authentication. Every outbound request includes an `Authorization: Bearer <token>` header sourced from `ANALYTICS_API_KEY`.
 
-Requests use a **500 ms timeout** — if CW1 does not respond in time, the controller falls back to mock data and the page still renders normally.
+Requests use a **3 second timeout** — if CW1 does not respond, the page renders an error banner.
 
 ### Endpoints consumed
 
@@ -171,7 +171,7 @@ Express (CW2 — port 4000)
   ├── Routes (index.js)
   │     └── requireAuth middleware
   └── dashboardController.js
-        ├── fetchOrMock() → CW1 API (port 3000) or mock data
+        ├── fetchFromAPI() → CW1 API (port 3000)
         └── EJS templates → HTML response
 
 CW1 Alumni Influencers API (port 3000)
