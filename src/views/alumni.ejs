@@ -35,6 +35,16 @@
         placeholder="Search by name..."
         class="filter-input"
       />
+      <select id="filterProgramme" class="filter-select">
+        <option value="">All Programmes</option>
+      </select>
+      <select id="filterYear" class="filter-select">
+        <option value="">All Years</option>
+      </select>
+      <select id="filterIndustry" class="filter-select">
+        <option value="">All Industries</option>
+      </select>
+      <button id="clearFilters" class="btn-clear">Clear</button>
     </div>
 
     <!-- Alumni table -->
@@ -48,23 +58,29 @@
             <th>Year</th>
             <th>Employer</th>
             <th>Job Title</th>
+            <th>Industry</th>
           </tr>
         </thead>
         <tbody>
           <% if (alumni && alumni.length > 0) { %>
             <% alumni.forEach(function(a) { %>
-              <tr>
+              <tr
+                data-degree="<%= a.degree_name || '' %>"
+                data-year="<%= a.year_completed || '' %>"
+                data-industry="<%= a.industry || '' %>"
+              >
                 <td><%= a.full_name || '—' %></td>
                 <td><%= a.email || '—' %></td>
                 <td><%= a.degree_name || '—' %></td>
                 <td><%= a.year_completed || '—' %></td>
                 <td><%= a.company_name || '—' %></td>
                 <td><%= a.job_title || '—' %></td>
+                <td><%= a.industry || '—' %></td>
               </tr>
             <% }) %>
           <% } else { %>
             <tr>
-              <td colspan="6" class="no-data">No alumni data available</td>
+              <td colspan="7" class="no-data">No alumni data available</td>
             </tr>
           <% } %>
         </tbody>

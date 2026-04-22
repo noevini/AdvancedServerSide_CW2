@@ -257,7 +257,11 @@ body {
 
 /* ── Alumni table ─────────────────────────────────────── */
 .filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
   margin-bottom: 1rem;
+  align-items: center;
 }
 
 .filter-input {
@@ -265,12 +269,42 @@ body {
   border: 1px solid #ddd;
   border-radius: 8px;
   font-size: 0.95rem;
-  width: 300px;
+  width: 220px;
 }
 
 .filter-input:focus {
   outline: none;
   border-color: #c8102e;
+}
+
+.filter-select {
+  padding: 0.65rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background: white;
+  cursor: pointer;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #c8102e;
+}
+
+.btn-clear {
+  padding: 0.65rem 1.1rem;
+  background: #6b7280;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-clear:hover {
+  background: #4b5563;
 }
 
 .table-container {

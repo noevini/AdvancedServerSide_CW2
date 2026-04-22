@@ -1,23 +1,61 @@
-// Alumni page — filters the table rows based on the search input
+// Alumni page — search and multi-filter logic for the alumni table
 
 const searchInput = document.getElementById("searchInput");
+const filterProgramme = document.getElementById("filterProgramme");
+const filterYear = document.getElementById("filterYear");
+const filterIndustry = document.getElementById("filterIndustry");
+const clearBtn = document.getElementById("clearFilters");
 const table = document.getElementById("alumniTable");
-const rows = table.getElementsByTagName("tr");
+const tbody = table.querySelector("tbody");
+const rows = Array.from(tbody.getElementsByTagName("tr"));
 
-// Listen for input events on the search box
-searchInput.addEventListener("input", function () {
-  const filter = searchInput.value.toLowerCase();
+// Populate a select dropdown with unique values from a row data attribute
+function populateSelect(select, attribute) {
+  const values = new Set();
+  rows.forEach((row) => {
+    const val = row.getAttribute(attribute);
+    if (val) values.add(val);
+  });
+  Array.from(values).sort().forEach((val) => {
+    const option = document.createElement("option");
+    option.value = val;
+    option.textContent = val;
+    select.appendChild(option);
+  });
+}
 
-  // Loop through all table rows (skip the header row at index 0)
-  for (let i = 1; i < rows.length; i++) {
-    const row = rows[i];
+populateSelect(filterProgramme, "data-degree");
+populateSelect(filterYear, "data-year");
+populateSelect(filterIndustry, "data-industry");
+
+// Apply all active filters and the search term to the table rows
+function applyFilters() {
+  const search = searchInput.value.toLowerCase();
+  const programme = filterProgramme.value;
+  const year = filterYear.value;
+  const industry = filterIndustry.value;
+
+  rows.forEach((row) => {
     const text = row.textContent.toLowerCase();
+    const matchSearch = !search || text.includes(search);
+    const matchProgramme = !programme || row.getAttribute("data-degree") === programme;
+    const matchYear = !year || row.getAttribute("data-year") === year;
+    const matchIndustry = !industry || row.getAttribute("data-industry") === industry;
 
-    // Show the row if it matches the search, hide it if not
-    if (text.includes(filter)) {
-      row.style.display = "";
-    } else {
-      row.style.display = "none";
-    }
-  }
+    row.style.display = matchSearch && matchProgramme && matchYear && matchIndustry ? "" : "none";
+  });
+}
+
+searchInput.addEventListener("input", applyFilters);
+filterProgramme.addEventListener("change", applyFilters);
+filterYear.addEventListener("change", applyFilters);
+filterIndustry.addEventListener("change", applyFilters);
+
+// Reset all filters and show all rows
+clearBtn.addEventListener("click", () => {
+  searchInput.value = "";
+  filterProgramme.value = "";
+  filterYear.value = "";
+  filterIndustry.value = "";
+  applyFilters();
 });
