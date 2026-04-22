@@ -62,6 +62,10 @@ const mockData = {
     labels: ["Cloud Computing", "Data Science", "Cybersecurity", "Web Development", "AI/ML", "DevOps"],
     values: [85, 72, 65, 58, 48, 41],
   },
+  geographic: {
+    labels: ["London", "Manchester", "Birmingham", "Edinburgh", "Bristol"],
+    values: [45, 18, 14, 12, 11],
+  },
   alumni: [
     { full_name: "Alice Johnson", email: "alice@example.com", degree_name: "BSc Computer Science", year_completed: 2021, company_name: "Google", job_title: "Software Engineer" },
     { full_name: "Ben Carter", email: "ben@example.com", degree_name: "BSc Data Science", year_completed: 2020, company_name: "Amazon", job_title: "Data Analyst" },
@@ -167,11 +171,12 @@ const getDashboard = async (req, res) => {
 
 // GET /graphs — fetch charts data from API, fall back to mock if unavailable
 const getGraphs = async (req, res) => {
-  const [certifications, trends, employment, courses] = await Promise.all([
+  const [certifications, trends, employment, courses, geographic] = await Promise.all([
     fetchOrMock(`${API_URL}/analytics/certifications`, mockData.certifications),
     fetchOrMock(`${API_URL}/analytics/trends`, mockData.trends),
     fetchOrMock(`${API_URL}/analytics/employment`, mockData.employment),
     fetchOrMock(`${API_URL}/analytics/short-courses`, mockData.courses),
+    fetchOrMock(`${API_URL}/analytics/geographic`, mockData.geographic),
   ]);
 
   res.render("graphs", {
@@ -180,6 +185,7 @@ const getGraphs = async (req, res) => {
     trends,
     employment,
     courses,
+    geographic,
     error: null,
   });
 };

@@ -136,6 +136,31 @@ if (employmentData.employers.labels.length) {
   });
 }
 
+// ── Horizontal Bar Chart — Geographic Distribution ─────────
+if (geoData.labels.length) {
+  const geoCtx = document.getElementById("geographicChart");
+
+  new Chart(geoCtx, {
+    type: "bar",
+    data: {
+      labels: geoData.labels,
+      datasets: [
+        {
+          label: "Number of Alumni",
+          data: geoData.values,
+          backgroundColor: "#8B5CF6",
+          borderWidth: 0,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      indexAxis: "y",
+    },
+  });
+}
+
 // ── Radar Chart — Short Course Categories ─────────────────
 if (coursesData.labels.length) {
   const coursesCtx = document.getElementById("coursesChart");

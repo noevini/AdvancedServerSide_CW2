@@ -74,6 +74,15 @@
       </div>
     </div>
 
+    <!-- Geographic Distribution — Horizontal bar chart -->
+    <div class="chart-section">
+      <h2>Geographic Distribution</h2>
+      <p class="chart-desc">Cities where graduates are currently employed</p>
+      <div class="chart-card">
+        <canvas id="geographicChart"></canvas>
+      </div>
+    </div>
+
   </main>
 
   <%- include('partials/footer') %>
@@ -87,6 +96,7 @@
   const trendsData = JSON.parse('<%- JSON.stringify(trends || {"labels":[],"datasets":[]}) %>');
   const employmentData = JSON.parse('<%- JSON.stringify(employment || {"industries":{"labels":[],"values":[]},"jobTitles":{"labels":[],"values":[]},"employers":{"labels":[],"values":[]}}) %>');
   const coursesData = JSON.parse('<%- JSON.stringify(courses || {"labels":[],"values":[]}) %>');
+  const geoData = JSON.parse('<%- JSON.stringify(geographic || {"labels":[],"values":[]}) %>');
 </script>
 
   <!-- Graphs charts script -->
