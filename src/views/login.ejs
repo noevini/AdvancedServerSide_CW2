@@ -23,6 +23,8 @@
 
     <!-- Login form — POSTs to /login -->
     <form action="/login" method="POST" class="login-form">
+      <!-- CSRF token — verified server-side to prevent cross-site request forgery -->
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
       <div class="form-group">
         <label for="username">Username</label>
         <input

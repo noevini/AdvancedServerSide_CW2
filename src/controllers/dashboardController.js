@@ -1,4 +1,5 @@
 const axios = require("axios");
+const crypto = require("crypto");
 
 // Base URL and API key for the CW1 backend
 const API_URL = process.env.CW1_API_URL || "http://localhost:3000";
@@ -72,29 +73,68 @@ const mockData = {
 
 // ── LOGIN ─────────────────────────────────────────────────
 
+// Generates a fresh CSRF token and stores it in the session
+const generateCsrfToken = (req) => {
+  const token = crypto.randomBytes(24).toString("hex");
+  req.session.csrfToken = token;
+  return token;
+};
+
 // GET /login — render the login form
 const getLogin = (req, res) => {
   if (req.session && req.session.user) {
     return res.redirect("/");
   }
-  res.render("login", { error: null });
+  res.render("login", { error: null, csrfToken: generateCsrfToken(req) });
 };
 
-// POST /login — validate credentials and create session
-
+// POST /login — validate input, verify CSRF token, then check credentials
 const postLogin = (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, _csrf } = req.body;
+
+  // CSRF verification — token in form must match token stored in session
+  if (!_csrf || _csrf !== req.session.csrfToken) {
+    return res.status(403).render("login", {
+      error: "Invalid request. Please try again.",
+      csrfToken: generateCsrfToken(req),
+    });
+  }
+
+  // Invalidate the used token so it cannot be reused
+  req.session.csrfToken = null;
+
+  // Input validation — trim whitespace and reject empty fields
+  const cleanUsername = (username || "").trim();
+  const cleanPassword = (password || "").trim();
+
+  if (!cleanUsername || !cleanPassword) {
+    return res.render("login", {
+      error: "Username and password are required.",
+      csrfToken: generateCsrfToken(req),
+    });
+  }
+
+  // Reject input containing HTML tags to prevent XSS
+  const htmlPattern = /<[^>]*>/;
+  if (htmlPattern.test(cleanUsername) || htmlPattern.test(cleanPassword)) {
+    return res.render("login", {
+      error: "Invalid characters in input.",
+      csrfToken: generateCsrfToken(req),
+    });
+  }
 
   const validUsername = process.env.DASHBOARD_USERNAME || "admin";
   const validPassword = process.env.DASHBOARD_PASSWORD || "admin123";
 
-  if (username === validUsername && password === validPassword) {
-    // Store user in session to mark as authenticated
-    req.session.user = { username };
+  if (cleanUsername === validUsername && cleanPassword === validPassword) {
+    req.session.user = { username: cleanUsername };
     return res.redirect("/");
   }
 
-  res.render("login", { error: "Invalid username or password" });
+  res.render("login", {
+    error: "Invalid username or password.",
+    csrfToken: generateCsrfToken(req),
+  });
 };
 
 // GET /logout — destroy session and redirect to login
