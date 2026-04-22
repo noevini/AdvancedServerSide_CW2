@@ -1,6 +1,11 @@
 // Graphs page — renders all Chart.js charts using data from the API
 // All data variables are passed from the EJS template
 
+const chartColors = [
+  "#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6",
+  "#06B6D4", "#F97316", "#EC4899", "#6B7280",
+];
+
 // ── Bar Chart — Top 10 Certifications ─────────────────────
 if (certData.labels.length) {
   const certCtx = document.getElementById("certificationsChart");
@@ -39,7 +44,12 @@ if (trendsData.labels.length) {
     type: "line",
     data: {
       labels: trendsData.labels,
-      datasets: trendsData.datasets,
+      datasets: trendsData.datasets.map((d) => ({
+        ...d,
+        tension: 0.4,
+        fill: true,
+        borderWidth: 3,
+      })),
     },
     options: {
       responsive: true,
@@ -50,11 +60,6 @@ if (trendsData.labels.length) {
       scales: {
         y: {
           beginAtZero: true,
-          ticks: {
-            callback: function (value) {
-              return value + "%";
-            },
-          },
         },
       },
     },
@@ -72,7 +77,9 @@ if (employmentData.industries.labels.length) {
       datasets: [
         {
           data: employmentData.industries.values,
-          borderWidth: 1,
+          backgroundColor: chartColors,
+          borderWidth: 3,
+          borderColor: "#fff",
         },
       ],
     },
@@ -97,7 +104,9 @@ if (employmentData.jobTitles.labels.length) {
       datasets: [
         {
           data: employmentData.jobTitles.values,
-          borderWidth: 1,
+          backgroundColor: chartColors,
+          borderWidth: 3,
+          borderColor: "#fff",
         },
       ],
     },
@@ -124,39 +133,63 @@ if (employmentData.employers.labels.length) {
           label: "Number of Alumni",
           data: employmentData.employers.values,
           backgroundColor: "#3B82F6",
-          borderWidth: 0,
+          borderColor: "#2563EB",
+          borderWidth: 1,
         },
       ],
     },
     options: {
+      indexAxis: "y",
       responsive: true,
       maintainAspectRatio: true,
-      indexAxis: "y", // makes it horizontal
+      plugins: {
+        legend: { display: false },
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: "Number of Alumni",
+          },
+        },
+      },
     },
   });
 }
 
-// ── Horizontal Bar Chart — Geographic Distribution ─────────
+// ── Radar Chart — Geographic Distribution ─────────────────
 if (geoData.labels.length) {
   const geoCtx = document.getElementById("geographicChart");
 
   new Chart(geoCtx, {
-    type: "bar",
+    type: "radar",
     data: {
       labels: geoData.labels,
       datasets: [
         {
           label: "Number of Alumni",
           data: geoData.values,
-          backgroundColor: "#8B5CF6",
-          borderWidth: 0,
+          backgroundColor: "rgba(59, 130, 246, 0.2)",
+          borderColor: "#3B82F6",
+          borderWidth: 2,
+          pointBackgroundColor: "#3B82F6",
+          pointBorderColor: "#fff",
+          pointRadius: 4,
         },
       ],
     },
     options: {
       responsive: true,
       maintainAspectRatio: true,
-      indexAxis: "y",
+      plugins: {
+        legend: { display: false },
+      },
+      scales: {
+        r: {
+          beginAtZero: true,
+        },
+      },
     },
   });
 }
@@ -176,12 +209,23 @@ if (coursesData.labels.length) {
           backgroundColor: "rgba(59, 130, 246, 0.2)",
           borderColor: "#3B82F6",
           borderWidth: 2,
+          pointBackgroundColor: "#3B82F6",
+          pointBorderColor: "#fff",
+          pointRadius: 4,
         },
       ],
     },
     options: {
       responsive: true,
       maintainAspectRatio: true,
+      plugins: {
+        legend: { display: false },
+      },
+      scales: {
+        r: {
+          beginAtZero: true,
+        },
+      },
     },
   });
 }
