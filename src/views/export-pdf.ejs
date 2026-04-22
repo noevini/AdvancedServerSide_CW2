@@ -26,6 +26,7 @@
         <th>Year</th>
         <th>Employer</th>
         <th>Job Title</th>
+        <th>Industry</th>
       </tr>
     </thead>
     <tbody>
@@ -37,6 +38,7 @@
           <td><%= a.year_completed || '—' %></td>
           <td><%= a.company_name || '—' %></td>
           <td><%= a.job_title || '—' %></td>
+          <td><%= a.industry || '—' %></td>
         </tr>
       <% }) %>
     </tbody>

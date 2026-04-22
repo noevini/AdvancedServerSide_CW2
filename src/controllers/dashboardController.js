@@ -69,11 +69,11 @@ const mockData = {
     values: [45, 18, 14, 12, 11],
   },
   alumni: [
-    { full_name: "Alice Johnson", email: "alice@example.com", degree_name: "BSc Computer Science", year_completed: 2021, company_name: "Google", job_title: "Software Engineer" },
-    { full_name: "Ben Carter", email: "ben@example.com", degree_name: "BSc Data Science", year_completed: 2020, company_name: "Amazon", job_title: "Data Analyst" },
-    { full_name: "Clara Smith", email: "clara@example.com", degree_name: "BSc Cybersecurity", year_completed: 2022, company_name: "Microsoft", job_title: "Security Analyst" },
-    { full_name: "David Lee", email: "david@example.com", degree_name: "BSc Software Engineering", year_completed: 2021, company_name: "Accenture", job_title: "DevOps Engineer" },
-    { full_name: "Emma Brown", email: "emma@example.com", degree_name: "BSc AI", year_completed: 2023, company_name: "IBM", job_title: "ML Engineer" },
+    { full_name: "Alice Johnson", email: "alice@example.com", degree_name: "BSc Computer Science", year_completed: 2021, company_name: "Google", job_title: "Software Engineer", industry: "Technology" },
+    { full_name: "Ben Carter", email: "ben@example.com", degree_name: "BSc Data Science", year_completed: 2020, company_name: "Amazon", job_title: "Data Analyst", industry: "Technology" },
+    { full_name: "Clara Smith", email: "clara@example.com", degree_name: "BSc Cybersecurity", year_completed: 2022, company_name: "Microsoft", job_title: "Security Analyst", industry: "Technology" },
+    { full_name: "David Lee", email: "david@example.com", degree_name: "BSc Software Engineering", year_completed: 2021, company_name: "Accenture", job_title: "DevOps Engineer", industry: "Consulting" },
+    { full_name: "Emma Brown", email: "emma@example.com", degree_name: "BSc AI", year_completed: 2023, company_name: "IBM", job_title: "ML Engineer", industry: "Technology" },
   ],
 };
 
@@ -211,9 +211,9 @@ const getAlumni = async (req, res) => {
 const exportCSV = async (_req, res) => {
   const alumni = await fetchOrMock(`${API_URL}/analytics/alumni`, mockData.alumni);
 
-  const header = "Name,Email,Degree,Year,Employer,Job Title\n";
+  const header = "Name,Email,Degree,Year,Employer,Job Title,Industry\n";
   const rows = alumni.map((a) =>
-    [a.full_name, a.email, a.degree_name, a.year_completed, a.company_name, a.job_title]
+    [a.full_name, a.email, a.degree_name, a.year_completed, a.company_name, a.job_title, a.industry]
       .map((v) => `"${(v || "").toString().replace(/"/g, '""')}"`)
       .join(",")
   );
