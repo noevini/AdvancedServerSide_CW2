@@ -21,20 +21,18 @@ const API_KEY = process.env.ANALYTICS_API_KEY || "";
 // Each entry: { username, email, passwordHash, verified, verifyToken, resetToken }
 const users = new Map();
 
-const initAdminUser = async () => {
-  const username = process.env.DASHBOARD_USERNAME || "admin";
-  const password = process.env.DASHBOARD_PASSWORD || "admin123";
-  const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-  users.set(username, {
-    username,
-    email: "admin@university.ac.uk",
-    passwordHash,
-    verified: true,
-    verifyToken: null,
-    resetToken: null,
-  });
-};
-initAdminUser();
+const username = process.env.DASHBOARD_USERNAME || "admin";
+const password = process.env.DASHBOARD_PASSWORD || "admin123";
+users.set(username, {
+  username,
+  email: "admin@university.ac.uk",
+  passwordHash: bcrypt.hashSync(password, SALT_ROUNDS),
+  verified: true,
+  verifyToken: null,
+  verifyTokenExpiry: null,
+  resetToken: null,
+  resetTokenExpiry: null,
+});
 
 // Helper — builds axios headers with the bearer token
 // Every request to CW1 must carry this token

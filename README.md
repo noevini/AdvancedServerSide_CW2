@@ -88,11 +88,12 @@ AdvancedServerSide_CW2/
 |---|---|---|
 | `PORT` | Port the CW2 server listens on | `4000` |
 | `NODE_ENV` | Environment mode | `development` |
+| `APP_URL` | Public URL of this dashboard — used to restrict CORS to same origin | `http://localhost:4000` |
 | `SESSION_SECRET` | Secret key used to sign session cookies — use a long random string in production | `change-me-in-production` |
 | `CW1_API_URL` | Base URL of the CW1 Alumni Influencers API | `http://localhost:3000` |
 | `ANALYTICS_API_KEY` | Bearer token for authenticating requests to CW1 (must have `read:alumni` and `read:analytics` permissions) | `your_api_key_here` |
 | `DASHBOARD_USERNAME` | Default admin login username | `admin` |
-| `DASHBOARD_PASSWORD` | Default admin login password (min 8 chars) | `admin123` |
+| `DASHBOARD_PASSWORD` | Default admin login password (min 8 chars, uppercase, number, special char) | `admin123` |
 
 ---
 
@@ -142,6 +143,7 @@ The `ANALYTICS_API_KEY` must be scoped with `read:alumni` and `read:analytics` p
 | Measure | Implementation |
 |---|---|
 | **Session authentication** | All protected routes require an active server-side session via `requireAuth` middleware |
+| **CORS** | Requests only accepted from the same origin (`APP_URL`) — cross-origin scraping blocked |
 | **CSRF protection** | Every POST form includes a cryptographically random single-use token validated server-side |
 | **Password hashing** | bcrypt with 10 salt rounds — industry standard, resistant to brute-force and rainbow tables |
 | **Token expiry** | Email verification tokens expire after 15 minutes; password reset tokens after 30 minutes |
