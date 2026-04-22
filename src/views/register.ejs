@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('partials/head') %>
+  <title>Register — Alumni Analytics</title>
+</head>
+<body class="login-page">
+
+  <div class="login-container">
+
+    <div class="login-header">
+      <h1>🎓 Alumni Analytics</h1>
+      <p>Create a staff account</p>
+    </div>
+
+    <% if (error) { %>
+      <div class="alert alert-error"><%= error %></div>
+    <% } %>
+
+    <form action="/register" method="POST" class="login-form">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" placeholder="Choose a username" required autocomplete="username" />
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" placeholder="your@university.ac.uk" required autocomplete="email" />
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="Min. 8 characters" required autocomplete="new-password" />
+      </div>
+
+      <button type="submit" class="btn-login">Register</button>
+    </form>
+
+    <p style="text-align:center;margin-top:1rem;font-size:0.85rem;color:#666;">
+      Already have an account? <a href="/login" style="color:#c8102e;font-weight:600;">Sign in</a>
+    </p>
+
+  </div>
+
+</body>
+</html>

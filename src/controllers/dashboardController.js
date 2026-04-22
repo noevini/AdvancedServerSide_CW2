@@ -5,6 +5,26 @@ const crypto = require("crypto");
 const API_URL = process.env.CW1_API_URL || "http://localhost:3000";
 const API_KEY = process.env.ANALYTICS_API_KEY || "";
 
+// In-memory user store — seeded with the admin account from env
+// Each entry: { username, email, passwordHash, verified, verifyToken, resetToken }
+const users = new Map();
+const hashPassword = (password) =>
+  crypto.createHash("sha256").update(password).digest("hex");
+
+const initAdminUser = () => {
+  const username = process.env.DASHBOARD_USERNAME || "admin";
+  const password = process.env.DASHBOARD_PASSWORD || "admin123";
+  users.set(username, {
+    username,
+    email: "admin@university.ac.uk",
+    passwordHash: hashPassword(password),
+    verified: true,
+    verifyToken: null,
+    resetToken: null,
+  });
+};
+initAdminUser();
+
 // Helper — builds axios headers with the bearer token
 // Every request to CW1 must carry this token
 const apiHeaders = () => ({
@@ -129,18 +149,22 @@ const postLogin = (req, res) => {
     });
   }
 
-  const validUsername = process.env.DASHBOARD_USERNAME || "admin";
-  const validPassword = process.env.DASHBOARD_PASSWORD || "admin123";
+  const user = users.get(cleanUsername);
 
-  if (cleanUsername === validUsername && cleanPassword === validPassword) {
-    req.session.user = { username: cleanUsername };
-    return res.redirect("/");
+  if (!user || user.passwordHash !== hashPassword(cleanPassword)) {
+    return res.render("login", {
+      error: "Invalid username or password.",
+      csrfToken: generateCsrfToken(req),
+    });
   }
 
-  res.render("login", {
-    error: "Invalid username or password.",
-    csrfToken: generateCsrfToken(req),
-  });
+  if (!user.verified) {
+    req.session.pendingUser = cleanUsername;
+    return res.redirect("/verify-email");
+  }
+
+  req.session.user = { username: cleanUsername };
+  return res.redirect("/");
 };
 
 // GET /logout — destroy session and redirect to login
@@ -154,11 +178,14 @@ const logout = (req, res) => {
 
 // GET / — fetch dashboard data from API, fall back to mock if unavailable
 const getDashboard = async (req, res) => {
-  const [summary, certifications, employment] = await Promise.all([
+  const [rawSummary, certifications, employment] = await Promise.all([
     fetchOrMock(`${API_URL}/analytics/summary`, mockData.summary),
     fetchOrMock(`${API_URL}/analytics/certifications`, mockData.certifications),
     fetchOrMock(`${API_URL}/analytics/employment`, mockData.employment),
   ]);
+
+  // Merge API summary with defaults so optional fields are always present
+  const summary = { ...mockData.summary, ...rawSummary };
 
   res.render("dashboard", {
     user: req.session.user,
@@ -230,10 +257,207 @@ const exportPDF = async (_req, res) => {
   res.render("export-pdf", { alumni });
 };
 
+// ── REGISTER ──────────────────────────────────────────────
+
+// GET /register
+const getRegister = (req, res) => {
+  if (req.session && req.session.user) return res.redirect("/");
+  res.render("register", { error: null, csrfToken: generateCsrfToken(req) });
+};
+
+// POST /register — validate input, create user, generate verify token
+const postRegister = (req, res) => {
+  const { username, email, password, _csrf } = req.body;
+
+  if (!_csrf || _csrf !== req.session.csrfToken) {
+    return res.status(403).render("register", {
+      error: "Invalid request. Please try again.",
+      csrfToken: generateCsrfToken(req),
+    });
+  }
+  req.session.csrfToken = null;
+
+  const cleanUsername = (username || "").trim();
+  const cleanEmail = (email || "").trim();
+  const cleanPassword = (password || "").trim();
+
+  if (!cleanUsername || !cleanEmail || !cleanPassword) {
+    return res.render("register", {
+      error: "All fields are required.",
+      csrfToken: generateCsrfToken(req),
+    });
+  }
+
+  const htmlPattern = /<[^>]*>/;
+  if (htmlPattern.test(cleanUsername) || htmlPattern.test(cleanEmail)) {
+    return res.render("register", {
+      error: "Invalid characters in input.",
+      csrfToken: generateCsrfToken(req),
+    });
+  }
+
+  if (cleanPassword.length < 8) {
+    return res.render("register", {
+      error: "Password must be at least 8 characters.",
+      csrfToken: generateCsrfToken(req),
+    });
+  }
+
+  if (users.has(cleanUsername)) {
+    return res.render("register", {
+      error: "Username already taken.",
+      csrfToken: generateCsrfToken(req),
+    });
+  }
+
+  const verifyToken = crypto.randomBytes(3).toString("hex").toUpperCase();
+
+  users.set(cleanUsername, {
+    username: cleanUsername,
+    email: cleanEmail,
+    passwordHash: hashPassword(cleanPassword),
+    verified: false,
+    verifyToken,
+    resetToken: null,
+  });
+
+  req.session.pendingUser = cleanUsername;
+  res.redirect("/verify-email");
+};
+
+// ── VERIFY EMAIL ──────────────────────────────────────────
+
+// GET /verify-email
+const getVerifyEmail = (req, res) => {
+  const username = req.session.pendingUser;
+  if (!username || !users.has(username)) return res.redirect("/login");
+  const user = users.get(username);
+  res.render("verify-email", {
+    error: null,
+    token: user.verifyToken,
+    csrfToken: generateCsrfToken(req),
+  });
+};
+
+// POST /verify-email — compare submitted token against stored token
+const postVerifyEmail = (req, res) => {
+  const { token, _csrf } = req.body;
+  const username = req.session.pendingUser;
+
+  if (!_csrf || _csrf !== req.session.csrfToken) {
+    return res.status(403).redirect("/verify-email");
+  }
+  req.session.csrfToken = null;
+
+  if (!username || !users.has(username)) return res.redirect("/login");
+
+  const user = users.get(username);
+
+  if (!token || token.trim().toUpperCase() !== user.verifyToken) {
+    return res.render("verify-email", {
+      error: "Invalid verification code. Please try again.",
+      token: user.verifyToken,
+      csrfToken: generateCsrfToken(req),
+    });
+  }
+
+  user.verified = true;
+  user.verifyToken = null;
+  delete req.session.pendingUser;
+  req.session.user = { username };
+  res.redirect("/");
+};
+
+// ── RESET PASSWORD ────────────────────────────────────────
+
+// GET /reset-password
+const getResetPassword = (req, res) => {
+  res.render("reset-password", {
+    error: null,
+    success: null,
+    stage: "request",
+    csrfToken: generateCsrfToken(req),
+  });
+};
+
+// POST /reset-password — two stages: request token, then set new password
+const postResetPassword = (req, res) => {
+  const { stage, email, token, password, _csrf } = req.body;
+
+  if (!_csrf || _csrf !== req.session.csrfToken) {
+    return res.status(403).redirect("/reset-password");
+  }
+  req.session.csrfToken = null;
+
+  if (stage === "request") {
+    const user = Array.from(users.values()).find((u) => u.email === (email || "").trim());
+
+    // Always show the token stage — avoids email enumeration
+    const resetToken = user ? crypto.randomBytes(3).toString("hex").toUpperCase() : null;
+    if (user && resetToken) {
+      user.resetToken = resetToken;
+      req.session.resetEmail = user.email;
+    }
+
+    return res.render("reset-password", {
+      error: null,
+      success: "If that email is registered, a reset code has been issued.",
+      stage: "confirm",
+      resetToken: user ? resetToken : null,
+      csrfToken: generateCsrfToken(req),
+    });
+  }
+
+  if (stage === "confirm") {
+    const resetEmail = req.session.resetEmail;
+    const user = Array.from(users.values()).find((u) => u.email === resetEmail);
+
+    if (!user || !token || token.trim().toUpperCase() !== user.resetToken) {
+      return res.render("reset-password", {
+        error: "Invalid reset code.",
+        success: null,
+        stage: "confirm",
+        resetToken: null,
+        csrfToken: generateCsrfToken(req),
+      });
+    }
+
+    const cleanPassword = (password || "").trim();
+    if (cleanPassword.length < 8) {
+      return res.render("reset-password", {
+        error: "Password must be at least 8 characters.",
+        success: null,
+        stage: "confirm",
+        resetToken: null,
+        csrfToken: generateCsrfToken(req),
+      });
+    }
+
+    user.passwordHash = hashPassword(cleanPassword);
+    user.resetToken = null;
+    delete req.session.resetEmail;
+
+    return res.render("reset-password", {
+      error: null,
+      success: "Password updated. You can now log in.",
+      stage: "done",
+      csrfToken: generateCsrfToken(req),
+    });
+  }
+
+  res.redirect("/reset-password");
+};
+
 module.exports = {
   getLogin,
   postLogin,
   logout,
+  getRegister,
+  postRegister,
+  getVerifyEmail,
+  postVerifyEmail,
+  getResetPassword,
+  postResetPassword,
   getDashboard,
   getGraphs,
   getAlumni,

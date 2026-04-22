@@ -14,6 +14,12 @@ const requireAuth = (req, res, next) => {
 router.get("/login", dashboardController.getLogin);
 router.post("/login", dashboardController.postLogin);
 router.get("/logout", dashboardController.logout);
+router.get("/register", dashboardController.getRegister);
+router.post("/register", dashboardController.postRegister);
+router.get("/verify-email", dashboardController.getVerifyEmail);
+router.post("/verify-email", dashboardController.postVerifyEmail);
+router.get("/reset-password", dashboardController.getResetPassword);
+router.post("/reset-password", dashboardController.postResetPassword);
 
 // Protected routes (auth required)
 router.get("/", requireAuth, dashboardController.getDashboard);
