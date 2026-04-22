@@ -21,6 +21,27 @@
       <div class="alert alert-error"><%= error %></div>
     <% } %>
 
+    <!-- Graph filters -->
+    <form method="GET" action="/graphs" class="filters" id="graphFilters">
+      <select name="programme" class="filter-select" onchange="document.getElementById('graphFilters').submit()">
+        <option value="">All Programmes</option>
+        <option value="BSc Computer Science"    <%= filters.programme === 'BSc Computer Science'    ? 'selected' : '' %>>BSc Computer Science</option>
+        <option value="BSc Data Science"        <%= filters.programme === 'BSc Data Science'        ? 'selected' : '' %>>BSc Data Science</option>
+        <option value="BSc Cybersecurity"       <%= filters.programme === 'BSc Cybersecurity'       ? 'selected' : '' %>>BSc Cybersecurity</option>
+        <option value="BSc Software Engineering"<%= filters.programme === 'BSc Software Engineering'? 'selected' : '' %>>BSc Software Engineering</option>
+        <option value="BSc AI"                  <%= filters.programme === 'BSc AI'                  ? 'selected' : '' %>>BSc AI</option>
+      </select>
+      <select name="year" class="filter-select" onchange="document.getElementById('graphFilters').submit()">
+        <option value="">All Years</option>
+        <% ['2019','2020','2021','2022','2023','2024'].forEach(function(y) { %>
+          <option value="<%= y %>" <%= filters.year === y ? 'selected' : '' %>><%= y %></option>
+        <% }) %>
+      </select>
+      <% if (filters.programme || filters.year) { %>
+        <a href="/graphs" class="btn-clear" style="text-decoration:none;display:inline-flex;align-items:center;">Clear</a>
+      <% } %>
+    </form>
+
     <!-- Skills Gap — Bar chart -->
     <div class="chart-section">
       <h2>Skills Gap Analysis</h2>

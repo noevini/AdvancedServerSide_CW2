@@ -199,13 +199,24 @@ const getDashboard = async (req, res) => {
 // ── GRAPHS ────────────────────────────────────────────────
 
 // GET /graphs — fetch charts data from API, fall back to mock if unavailable
+// Accepts optional query params: ?programme=BSc+Computer+Science&year=2022
 const getGraphs = async (req, res) => {
+  const { programme = "", year = "" } = req.query;
+
+  const buildUrl = (base) => {
+    const params = new URLSearchParams();
+    if (programme) params.set("programme", programme);
+    if (year) params.set("year", year);
+    const qs = params.toString();
+    return qs ? `${base}?${qs}` : base;
+  };
+
   const [certifications, trends, employment, courses, geographic] = await Promise.all([
-    fetchOrMock(`${API_URL}/analytics/certifications`, mockData.certifications),
-    fetchOrMock(`${API_URL}/analytics/trends`, mockData.trends),
-    fetchOrMock(`${API_URL}/analytics/employment`, mockData.employment),
-    fetchOrMock(`${API_URL}/analytics/short-courses`, mockData.courses),
-    fetchOrMock(`${API_URL}/analytics/geographic`, mockData.geographic),
+    fetchOrMock(buildUrl(`${API_URL}/analytics/certifications`), mockData.certifications),
+    fetchOrMock(buildUrl(`${API_URL}/analytics/trends`), mockData.trends),
+    fetchOrMock(buildUrl(`${API_URL}/analytics/employment`), mockData.employment),
+    fetchOrMock(buildUrl(`${API_URL}/analytics/short-courses`), mockData.courses),
+    fetchOrMock(buildUrl(`${API_URL}/analytics/geographic`), mockData.geographic),
   ]);
 
   res.render("graphs", {
@@ -215,6 +226,7 @@ const getGraphs = async (req, res) => {
     employment,
     courses,
     geographic,
+    filters: { programme, year },
     error: null,
   });
 };
