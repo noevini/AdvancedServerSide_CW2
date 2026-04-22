@@ -4,6 +4,15 @@ const bcrypt = require("bcrypt");
 
 const SALT_ROUNDS = 10;
 
+// Returns an error string if the password fails complexity rules, otherwise null
+const validatePassword = (password) => {
+  if (password.length < 8) return "Password must be at least 8 characters.";
+  if (!/[A-Z]/.test(password)) return "Password must contain at least one uppercase letter.";
+  if (!/[0-9]/.test(password)) return "Password must contain at least one number.";
+  if (!/[^A-Za-z0-9]/.test(password)) return "Password must contain at least one special character.";
+  return null;
+};
+
 // Base URL and API key for the CW1 backend
 const API_URL = process.env.CW1_API_URL || "http://localhost:3000";
 const API_KEY = process.env.ANALYTICS_API_KEY || "";
@@ -333,11 +342,9 @@ const postRegister = async (req, res) => {
     });
   }
 
-  if (cleanPassword.length < 8) {
-    return res.render("register", {
-      error: "Password must be at least 8 characters.",
-      csrfToken: generateCsrfToken(req),
-    });
+  const passwordError = validatePassword(cleanPassword);
+  if (passwordError) {
+    return res.render("register", { error: passwordError, csrfToken: generateCsrfToken(req) });
   }
 
   if (users.has(cleanUsername)) {
@@ -474,9 +481,10 @@ const postResetPassword = async (req, res) => {
     }
 
     const cleanPassword = (password || "").trim();
-    if (cleanPassword.length < 8) {
+    const passwordError = validatePassword(cleanPassword);
+    if (passwordError) {
       return res.render("reset-password", {
-        error: "Password must be at least 8 characters.",
+        error: passwordError,
         success: null,
         stage: "confirm",
         resetToken: null,

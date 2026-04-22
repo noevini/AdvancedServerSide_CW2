@@ -1,5 +1,6 @@
 const express = require("express");
 const helmet = require("helmet");
+const cors = require("cors");
 const session = require("express-session");
 const cookieParser = require("cookie-parser");
 const path = require("path");
@@ -14,6 +15,15 @@ const app = express();
 app.use(
   helmet({
     contentSecurityPolicy: false,
+  }),
+);
+
+// CORS — only allow requests from the same origin (the dashboard itself)
+// Blocks cross-origin requests from other domains attempting to scrape data
+app.use(
+  cors({
+    origin: process.env.APP_URL || "http://localhost:4000",
+    credentials: true,
   }),
 );
 
