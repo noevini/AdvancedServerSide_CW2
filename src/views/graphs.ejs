@@ -27,7 +27,8 @@
       <p class="chart-desc">Certifications acquired post-graduation reveal curriculum deficiencies</p>
       <div class="chart-card">
         <h3>Top 10 Post-Graduation Certifications</h3>
-        <canvas id="certificationsChart"></canvas>
+        <div class="chart-loading" id="loading-certificationsChart"></div>
+        <canvas id="certificationsChart" style="display:none"></canvas>
         <button class="btn-download" onclick="downloadChart('certificationsChart', 'certifications')">Download</button>
       </div>
     </div>
@@ -37,7 +38,8 @@
       <h2>Emerging Technology Adoption Trends</h2>
       <p class="chart-desc">Certification growth over graduation years</p>
       <div class="chart-card">
-        <canvas id="trendsChart"></canvas>
+        <div class="chart-loading" id="loading-trendsChart"></div>
+        <canvas id="trendsChart" style="display:none"></canvas>
         <button class="btn-download" onclick="downloadChart('trendsChart', 'trends')">Download</button>
       </div>
     </div>
@@ -49,12 +51,14 @@
       <div class="charts-row">
         <div class="chart-card">
           <h3>Employment by Industry Sector</h3>
-          <canvas id="industryChart"></canvas>
+          <div class="chart-loading" id="loading-industryChart"></div>
+          <canvas id="industryChart" style="display:none"></canvas>
           <button class="btn-download" onclick="downloadChart('industryChart', 'industry')">Download</button>
         </div>
         <div class="chart-card">
           <h3>Most Common Job Titles</h3>
-          <canvas id="jobTitlesChart"></canvas>
+          <div class="chart-loading" id="loading-jobTitlesChart"></div>
+          <canvas id="jobTitlesChart" style="display:none"></canvas>
           <button class="btn-download" onclick="downloadChart('jobTitlesChart', 'job-titles')">Download</button>
         </div>
       </div>
@@ -65,7 +69,8 @@
       <h2>Top Employers</h2>
       <p class="chart-desc">Organisations employing the most graduates</p>
       <div class="chart-card">
-        <canvas id="employersChart"></canvas>
+        <div class="chart-loading" id="loading-employersChart"></div>
+        <canvas id="employersChart" style="display:none"></canvas>
         <button class="btn-download" onclick="downloadChart('employersChart', 'employers')">Download</button>
       </div>
     </div>
@@ -75,7 +80,8 @@
       <h2>Post-Graduation Course Categories</h2>
       <p class="chart-desc">Distribution of short courses completed after graduation</p>
       <div class="chart-card">
-        <canvas id="coursesChart"></canvas>
+        <div class="chart-loading" id="loading-coursesChart"></div>
+        <canvas id="coursesChart" style="display:none"></canvas>
         <button class="btn-download" onclick="downloadChart('coursesChart', 'courses')">Download</button>
       </div>
     </div>
@@ -85,7 +91,8 @@
       <h2>Geographic Distribution</h2>
       <p class="chart-desc">Cities where graduates are currently employed</p>
       <div class="chart-card">
-        <canvas id="geographicChart"></canvas>
+        <div class="chart-loading" id="loading-geographicChart"></div>
+        <canvas id="geographicChart" style="display:none"></canvas>
         <button class="btn-download" onclick="downloadChart('geographicChart', 'geographic')">Download</button>
       </div>
     </div>

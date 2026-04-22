@@ -15,6 +15,12 @@ const chartColors = [
   "#06B6D4", "#F97316", "#EC4899", "#6B7280",
 ];
 
+// Shows the canvas and hides its loading spinner after a chart is created
+function revealChart(canvasId) {
+  document.getElementById(canvasId).style.display = "";
+  document.getElementById("loading-" + canvasId).style.display = "none";
+}
+
 // ── Bar Chart — Top 10 Certifications ─────────────────────
 if (certData.labels.length) {
   const certCtx = document.getElementById("certificationsChart");
@@ -43,6 +49,7 @@ if (certData.labels.length) {
       maintainAspectRatio: true,
     },
   });
+  revealChart("certificationsChart");
 }
 
 // ── Line Chart — Emerging Technology Trends ────────────────
@@ -73,6 +80,7 @@ if (trendsData.labels.length) {
       },
     },
   });
+  revealChart("trendsChart");
 }
 
 // ── Pie Chart — Employment by Industry Sector ──────────────
@@ -100,6 +108,7 @@ if (employmentData.industries.labels.length) {
       },
     },
   });
+  revealChart("industryChart");
 }
 
 // ── Doughnut Chart — Most Common Job Titles ────────────────
@@ -127,6 +136,7 @@ if (employmentData.jobTitles.labels.length) {
       },
     },
   });
+  revealChart("jobTitlesChart");
 }
 
 // ── Horizontal Bar Chart — Top Employers ───────────────────
@@ -165,6 +175,7 @@ if (employmentData.employers.labels.length) {
       },
     },
   });
+  revealChart("employersChart");
 }
 
 // ── Radar Chart — Geographic Distribution ─────────────────
@@ -201,6 +212,7 @@ if (geoData.labels.length) {
       },
     },
   });
+  revealChart("geographicChart");
 }
 
 // ── Radar Chart — Short Course Categories ─────────────────
@@ -237,4 +249,5 @@ if (coursesData.labels.length) {
       },
     },
   });
+  revealChart("coursesChart");
 }
