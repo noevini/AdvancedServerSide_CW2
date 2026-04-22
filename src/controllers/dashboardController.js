@@ -18,15 +18,13 @@ const API_URL = process.env.CW1_API_URL || "http://localhost:3000";
 const API_KEY = process.env.ANALYTICS_API_KEY || "";
 
 // In-memory user store — seeded with the admin account from env
-// Each entry: { username, email, passwordHash, verified, verifyToken, resetToken }
 const users = new Map();
-
-const username = process.env.DASHBOARD_USERNAME || "admin";
-const password = process.env.DASHBOARD_PASSWORD || "admin123";
-users.set(username, {
-  username,
+const adminUsername = process.env.DASHBOARD_USERNAME || "admin";
+const adminPassword = process.env.DASHBOARD_PASSWORD || "admin123";
+users.set(adminUsername, {
+  username: adminUsername,
   email: "admin@university.ac.uk",
-  passwordHash: bcrypt.hashSync(password, SALT_ROUNDS),
+  passwordHash: bcrypt.hashSync(adminPassword, SALT_ROUNDS),
   verified: true,
   verifyToken: null,
   verifyTokenExpiry: null,
@@ -34,76 +32,17 @@ users.set(username, {
   resetTokenExpiry: null,
 });
 
-// Helper — builds axios headers with the bearer token
-// Every request to CW1 must carry this token
-const apiHeaders = () => ({
-  Authorization: `Bearer ${API_KEY}`,
-});
+// Builds axios headers with the bearer token required by CW1
+const apiHeaders = () => ({ Authorization: `Bearer ${API_KEY}` });
 
-// Try the API with a short timeout; return fallback if it fails
-const fetchOrMock = async (url, fallback) => {
+// Fetches data from the CW1 API — returns null on failure
+const fetchFromAPI = async (url) => {
   try {
-    const res = await axios.get(url, { headers: apiHeaders(), timeout: 500 });
+    const res = await axios.get(url, { headers: apiHeaders(), timeout: 3000 });
     return res.data;
   } catch {
-    return fallback;
+    return null;
   }
-};
-
-// Fallback data used when the API is unavailable
-const mockData = {
-  summary: {
-    totalAlumni: 248,
-    totalCertifications: 1432,
-    employmentRate: 94,
-    criticalGaps: 3,
-    avgTimeToEmployment: 4,
-  },
-  certifications: {
-    labels: [
-      "AWS Cloud Practitioner", "CompTIA Security+", "Google Analytics",
-      "Docker Certified", "PMP", "Kubernetes (CKA)",
-      "Azure Fundamentals", "Cisco CCNA", "Scrum Master", "Salesforce Admin",
-    ],
-    values: [68, 54, 47, 42, 38, 35, 31, 28, 25, 21],
-  },
-  trends: {
-    labels: ["2019", "2020", "2021", "2022", "2023"],
-    datasets: [
-      { label: "Cloud", data: [12, 18, 28, 42, 55], borderColor: "#3B82F6", backgroundColor: "transparent" },
-      { label: "Security", data: [8, 14, 22, 35, 48], borderColor: "#EF4444", backgroundColor: "transparent" },
-      { label: "DevOps", data: [5, 10, 18, 30, 41], borderColor: "#10B981", backgroundColor: "transparent" },
-    ],
-  },
-  employment: {
-    industries: {
-      labels: ["Technology", "Finance", "Healthcare", "Education", "Retail"],
-      values: [45, 20, 15, 12, 8],
-    },
-    jobTitles: {
-      labels: ["Software Engineer", "Data Analyst", "Project Manager", "DevOps Engineer", "UX Designer"],
-      values: [35, 25, 18, 14, 8],
-    },
-    employers: {
-      labels: ["Google", "Amazon", "Microsoft", "Accenture", "IBM"],
-      values: [42, 38, 35, 28, 22],
-    },
-  },
-  courses: {
-    labels: ["Cloud Computing", "Data Science", "Cybersecurity", "Web Development", "AI/ML", "DevOps"],
-    values: [85, 72, 65, 58, 48, 41],
-  },
-  geographic: {
-    labels: ["London", "Manchester", "Birmingham", "Edinburgh", "Bristol"],
-    values: [45, 18, 14, 12, 11],
-  },
-  alumni: [
-    { full_name: "Alice Johnson", email: "alice@example.com", degree_name: "BSc Computer Science", year_completed: 2021, company_name: "Google", job_title: "Software Engineer", industry: "Technology" },
-    { full_name: "Ben Carter", email: "ben@example.com", degree_name: "BSc Data Science", year_completed: 2020, company_name: "Amazon", job_title: "Data Analyst", industry: "Technology" },
-    { full_name: "Clara Smith", email: "clara@example.com", degree_name: "BSc Cybersecurity", year_completed: 2022, company_name: "Microsoft", job_title: "Security Analyst", industry: "Technology" },
-    { full_name: "David Lee", email: "david@example.com", degree_name: "BSc Software Engineering", year_completed: 2021, company_name: "Accenture", job_title: "DevOps Engineer", industry: "Consulting" },
-    { full_name: "Emma Brown", email: "emma@example.com", degree_name: "BSc AI", year_completed: 2023, company_name: "IBM", job_title: "ML Engineer", industry: "Technology" },
-  ],
 };
 
 // ── LOGIN ─────────────────────────────────────────────────
@@ -115,30 +54,24 @@ const generateCsrfToken = (req) => {
   return token;
 };
 
-// GET /login — render the login form
+// GET /login
 const getLogin = (req, res) => {
-  if (req.session && req.session.user) {
-    return res.redirect("/");
-  }
+  if (req.session && req.session.user) return res.redirect("/");
   res.render("login", { error: null, csrfToken: generateCsrfToken(req) });
 };
 
-// POST /login — validate input, verify CSRF token, then check credentials
+// POST /login — validate input, verify CSRF, check credentials
 const postLogin = async (req, res) => {
   const { username, password, _csrf } = req.body;
 
-  // CSRF verification — token in form must match token stored in session
   if (!_csrf || _csrf !== req.session.csrfToken) {
     return res.status(403).render("login", {
       error: "Invalid request. Please try again.",
       csrfToken: generateCsrfToken(req),
     });
   }
-
-  // Invalidate the used token so it cannot be reused
   req.session.csrfToken = null;
 
-  // Input validation — trim whitespace and reject empty fields
   const cleanUsername = (username || "").trim();
   const cleanPassword = (password || "").trim();
 
@@ -149,7 +82,6 @@ const postLogin = async (req, res) => {
     });
   }
 
-  // Reject input containing HTML tags to prevent XSS
   const htmlPattern = /<[^>]*>/;
   if (htmlPattern.test(cleanUsername) || htmlPattern.test(cleanPassword)) {
     return res.render("login", {
@@ -177,39 +109,35 @@ const postLogin = async (req, res) => {
   return res.redirect("/");
 };
 
-// GET /logout — destroy session and redirect to login
+// GET /logout
 const logout = (req, res) => {
-  req.session.destroy(() => {
-    res.redirect("/login");
-  });
+  req.session.destroy(() => res.redirect("/login"));
 };
 
 // ── DASHBOARD ─────────────────────────────────────────────
 
-// GET / — fetch dashboard data from API, fall back to mock if unavailable
+// GET /
 const getDashboard = async (req, res) => {
-  const [rawSummary, certifications, employment] = await Promise.all([
-    fetchOrMock(`${API_URL}/analytics/summary`, mockData.summary),
-    fetchOrMock(`${API_URL}/analytics/certifications`, mockData.certifications),
-    fetchOrMock(`${API_URL}/analytics/employment`, mockData.employment),
+  const [summary, certifications, employment] = await Promise.all([
+    fetchFromAPI(`${API_URL}/analytics/summary`),
+    fetchFromAPI(`${API_URL}/analytics/certifications`),
+    fetchFromAPI(`${API_URL}/analytics/employment`),
   ]);
 
-  // Merge API summary with defaults so optional fields are always present
-  const summary = { ...mockData.summary, ...rawSummary };
+  const error = !summary && !certifications ? "Could not connect to the API. Check CW1 is running." : null;
 
   res.render("dashboard", {
     user: req.session.user,
     summary,
     certifications,
     employment,
-    error: null,
+    error,
   });
 };
 
 // ── GRAPHS ────────────────────────────────────────────────
 
-// GET /graphs — fetch charts data from API, fall back to mock if unavailable
-// Accepts optional query params: ?programme=BSc+Computer+Science&year=2022
+// GET /graphs — accepts ?programme= and ?year= query params forwarded to the API
 const getGraphs = async (req, res) => {
   const { programme = "", year = "" } = req.query;
 
@@ -222,12 +150,14 @@ const getGraphs = async (req, res) => {
   };
 
   const [certifications, trends, employment, courses, geographic] = await Promise.all([
-    fetchOrMock(buildUrl(`${API_URL}/analytics/certifications`), mockData.certifications),
-    fetchOrMock(buildUrl(`${API_URL}/analytics/trends`), mockData.trends),
-    fetchOrMock(buildUrl(`${API_URL}/analytics/employment`), mockData.employment),
-    fetchOrMock(buildUrl(`${API_URL}/analytics/short-courses`), mockData.courses),
-    fetchOrMock(buildUrl(`${API_URL}/analytics/geographic`), mockData.geographic),
+    fetchFromAPI(buildUrl(`${API_URL}/analytics/certifications`)),
+    fetchFromAPI(buildUrl(`${API_URL}/analytics/trends`)),
+    fetchFromAPI(buildUrl(`${API_URL}/analytics/employment`)),
+    fetchFromAPI(buildUrl(`${API_URL}/analytics/short-courses`)),
+    fetchFromAPI(buildUrl(`${API_URL}/analytics/geographic`)),
   ]);
+
+  const error = !certifications && !trends ? "Could not connect to the API. Check CW1 is running." : null;
 
   res.render("graphs", {
     user: req.session.user,
@@ -237,20 +167,20 @@ const getGraphs = async (req, res) => {
     courses,
     geographic,
     filters: { programme, year },
-    error: null,
+    error,
   });
 };
 
 // ── ALUMNI ────────────────────────────────────────────────
 
-// GET /alumni — fetch alumni list from API, fall back to empty array
+// GET /alumni
 const getAlumni = async (req, res) => {
-  const alumni = await fetchOrMock(`${API_URL}/analytics/alumni`, mockData.alumni);
+  const alumni = await fetchFromAPI(`${API_URL}/analytics/alumni`);
 
   res.render("alumni", {
     user: req.session.user,
-    alumni,
-    error: null,
+    alumni: alumni || [],
+    error: !alumni ? "Could not connect to the API. Check CW1 is running." : null,
   });
 };
 
@@ -269,10 +199,10 @@ const applyAlumniFilters = (alumni, query) => {
   });
 };
 
-// GET /export/csv — stream filtered alumni data as a CSV file download
+// GET /export/csv — downloads filtered alumni data as CSV
 const exportCSV = async (req, res) => {
-  const all = await fetchOrMock(`${API_URL}/analytics/alumni`, mockData.alumni);
-  const alumni = applyAlumniFilters(all, req.query);
+  const all = await fetchFromAPI(`${API_URL}/analytics/alumni`);
+  const alumni = applyAlumniFilters(all || [], req.query);
 
   const header = "Name,Email,Degree,Year,Employer,Job Title,Industry\n";
   const rows = alumni.map((a) =>
@@ -286,11 +216,10 @@ const exportCSV = async (req, res) => {
   res.send(header + rows.join("\n"));
 };
 
-// GET /export/pdf — render a print-friendly filtered alumni table
+// GET /export/pdf — renders a print-friendly filtered alumni table
 const exportPDF = async (req, res) => {
-  const all = await fetchOrMock(`${API_URL}/analytics/alumni`, mockData.alumni);
-  const alumni = applyAlumniFilters(all, req.query);
-
+  const all = await fetchFromAPI(`${API_URL}/analytics/alumni`);
+  const alumni = applyAlumniFilters(all || [], req.query);
   res.render("export-pdf", { alumni });
 };
 
@@ -319,18 +248,12 @@ const postRegister = async (req, res) => {
   const cleanPassword = (password || "").trim();
 
   if (!cleanUsername || !cleanEmail || !cleanPassword) {
-    return res.render("register", {
-      error: "All fields are required.",
-      csrfToken: generateCsrfToken(req),
-    });
+    return res.render("register", { error: "All fields are required.", csrfToken: generateCsrfToken(req) });
   }
 
   const htmlPattern = /<[^>]*>/;
   if (htmlPattern.test(cleanUsername) || htmlPattern.test(cleanEmail)) {
-    return res.render("register", {
-      error: "Invalid characters in input.",
-      csrfToken: generateCsrfToken(req),
-    });
+    return res.render("register", { error: "Invalid characters in input.", csrfToken: generateCsrfToken(req) });
   }
 
   if (!cleanEmail.endsWith(".ac.uk")) {
@@ -346,14 +269,10 @@ const postRegister = async (req, res) => {
   }
 
   if (users.has(cleanUsername)) {
-    return res.render("register", {
-      error: "Username already taken.",
-      csrfToken: generateCsrfToken(req),
-    });
+    return res.render("register", { error: "Username already taken.", csrfToken: generateCsrfToken(req) });
   }
 
   const verifyToken = crypto.randomBytes(3).toString("hex").toUpperCase();
-  const verifyTokenExpiry = Date.now() + 15 * 60 * 1000; // 15 minutes
   const passwordHash = await bcrypt.hash(cleanPassword, SALT_ROUNDS);
 
   users.set(cleanUsername, {
@@ -362,7 +281,7 @@ const postRegister = async (req, res) => {
     passwordHash,
     verified: false,
     verifyToken,
-    verifyTokenExpiry,
+    verifyTokenExpiry: Date.now() + 15 * 60 * 1000,
     resetToken: null,
     resetTokenExpiry: null,
   });
@@ -378,21 +297,15 @@ const getVerifyEmail = (req, res) => {
   const username = req.session.pendingUser;
   if (!username || !users.has(username)) return res.redirect("/login");
   const user = users.get(username);
-  res.render("verify-email", {
-    error: null,
-    token: user.verifyToken,
-    csrfToken: generateCsrfToken(req),
-  });
+  res.render("verify-email", { error: null, token: user.verifyToken, csrfToken: generateCsrfToken(req) });
 };
 
-// POST /verify-email — compare submitted token against stored token
+// POST /verify-email — compare token and mark account as verified
 const postVerifyEmail = (req, res) => {
   const { token, _csrf } = req.body;
   const username = req.session.pendingUser;
 
-  if (!_csrf || _csrf !== req.session.csrfToken) {
-    return res.status(403).redirect("/verify-email");
-  }
+  if (!_csrf || _csrf !== req.session.csrfToken) return res.status(403).redirect("/verify-email");
   req.session.csrfToken = null;
 
   if (!username || !users.has(username)) return res.redirect("/login");
@@ -427,34 +340,24 @@ const postVerifyEmail = (req, res) => {
 
 // GET /reset-password
 const getResetPassword = (req, res) => {
-  res.render("reset-password", {
-    error: null,
-    success: null,
-    stage: "request",
-    csrfToken: generateCsrfToken(req),
-  });
+  res.render("reset-password", { error: null, success: null, stage: "request", csrfToken: generateCsrfToken(req) });
 };
 
-// POST /reset-password — two stages: request token, then set new password
+// POST /reset-password — stage 1: issue token; stage 2: set new password
 const postResetPassword = async (req, res) => {
   const { stage, email, token, password, _csrf } = req.body;
 
-  if (!_csrf || _csrf !== req.session.csrfToken) {
-    return res.status(403).redirect("/reset-password");
-  }
+  if (!_csrf || _csrf !== req.session.csrfToken) return res.status(403).redirect("/reset-password");
   req.session.csrfToken = null;
 
   if (stage === "request") {
     const user = Array.from(users.values()).find((u) => u.email === (email || "").trim());
-
-    // Always show the token stage — avoids email enumeration
     const resetToken = user ? crypto.randomBytes(3).toString("hex").toUpperCase() : null;
     if (user && resetToken) {
       user.resetToken = resetToken;
-      user.resetTokenExpiry = Date.now() + 30 * 60 * 1000; // 30 minutes
+      user.resetTokenExpiry = Date.now() + 30 * 60 * 1000;
       req.session.resetEmail = user.email;
     }
-
     return res.render("reset-password", {
       error: null,
       success: "If that email is registered, a reset code has been issued.",
@@ -465,8 +368,7 @@ const postResetPassword = async (req, res) => {
   }
 
   if (stage === "confirm") {
-    const resetEmail = req.session.resetEmail;
-    const user = Array.from(users.values()).find((u) => u.email === resetEmail);
+    const user = Array.from(users.values()).find((u) => u.email === req.session.resetEmail);
 
     if (!user || !token || token.trim().toUpperCase() !== user.resetToken || Date.now() > user.resetTokenExpiry) {
       return res.render("reset-password", {
