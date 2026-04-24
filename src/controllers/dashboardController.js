@@ -352,6 +352,7 @@ const postVerifyEmail = async (req, res) => {
       return res.render("verify-email", {
         error: null,
         success: "Email verified! You can now log in.",
+        token: null,
         csrfToken: generateCsrfToken(req),
       });
     }
@@ -359,6 +360,7 @@ const postVerifyEmail = async (req, res) => {
     return res.render("verify-email", {
       error:
         error.response?.data?.error || "Verification failed. Please try again.",
+      success: null,
       token: null,
       csrfToken: generateCsrfToken(req),
     });
@@ -366,6 +368,7 @@ const postVerifyEmail = async (req, res) => {
 
   res.render("verify-email", {
     error: "Verification failed. Please try again.",
+    success: null,
     token: null,
     csrfToken: generateCsrfToken(req),
   });
