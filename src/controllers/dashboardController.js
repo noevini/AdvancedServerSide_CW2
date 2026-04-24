@@ -17,16 +17,11 @@ const validatePassword = (password) => {
 const API_URL = process.env.CW1_API_URL || "http://localhost:3000";
 const API_KEY = process.env.ANALYTICS_API_KEY || "";
 
-// Builds axios headers with the bearer token for authenticated requests
-const apiHeaders = (token) => ({
-  Authorization: token ? `Bearer ${token}` : undefined,
-});
-
-// Fetches data from the CW1 API — returns null on failure
-const fetchFromAPI = async (url, token) => {
+// Fetches data from the CW1 analytics API — returns null on failure
+const fetchFromAPI = async (url) => {
   try {
     const res = await axios.get(url, {
-      headers: apiHeaders(token),
+      headers: { Authorization: `Bearer ${API_KEY}` },
       timeout: 3000,
     });
     return res.data;
@@ -113,11 +108,10 @@ const logout = (req, res) => {
 
 // GET /
 const getDashboard = async (req, res) => {
-  const token = req.session.user?.token;
   const [summary, certifications, employment] = await Promise.all([
-    fetchFromAPI(`${API_URL}/analytics/summary`, token),
-    fetchFromAPI(`${API_URL}/analytics/certifications`, token),
-    fetchFromAPI(`${API_URL}/analytics/employment`, token),
+    fetchFromAPI(`${API_URL}/analytics/summary`),
+    fetchFromAPI(`${API_URL}/analytics/certifications`),
+    fetchFromAPI(`${API_URL}/analytics/employment`),
   ]);
 
   const error =
@@ -139,7 +133,6 @@ const getDashboard = async (req, res) => {
 // GET /graphs — accepts ?programme= and ?year= query params forwarded to the API
 const getGraphs = async (req, res) => {
   const { programme = "", year = "" } = req.query;
-  const token = req.session.user?.token;
 
   const buildUrl = (base) => {
     const params = new URLSearchParams();
@@ -151,11 +144,11 @@ const getGraphs = async (req, res) => {
 
   const [certifications, trends, employment, courses, geographic] =
     await Promise.all([
-      fetchFromAPI(buildUrl(`${API_URL}/analytics/certifications`), token),
-      fetchFromAPI(buildUrl(`${API_URL}/analytics/trends`), token),
-      fetchFromAPI(buildUrl(`${API_URL}/analytics/employment`), token),
-      fetchFromAPI(buildUrl(`${API_URL}/analytics/short-courses`), token),
-      fetchFromAPI(buildUrl(`${API_URL}/analytics/geographic`), token),
+      fetchFromAPI(buildUrl(`${API_URL}/analytics/certifications`)),
+      fetchFromAPI(buildUrl(`${API_URL}/analytics/trends`)),
+      fetchFromAPI(buildUrl(`${API_URL}/analytics/employment`)),
+      fetchFromAPI(buildUrl(`${API_URL}/analytics/short-courses`)),
+      fetchFromAPI(buildUrl(`${API_URL}/analytics/geographic`)),
     ]);
 
   const error =
@@ -179,8 +172,7 @@ const getGraphs = async (req, res) => {
 
 // GET /alumni
 const getAlumni = async (req, res) => {
-  const token = req.session.user?.token;
-  const alumni = await fetchFromAPI(`${API_URL}/analytics/alumni`, token);
+  const alumni = await fetchFromAPI(`${API_URL}/analytics/alumni`);
 
   res.render("alumni", {
     user: req.session.user,
@@ -208,8 +200,7 @@ const applyAlumniFilters = (alumni, query) => {
 
 // GET /export/csv — downloads filtered alumni data as CSV
 const exportCSV = async (req, res) => {
-  const token = req.session.user?.token;
-  const all = await fetchFromAPI(`${API_URL}/analytics/alumni`, token);
+  const all = await fetchFromAPI(`${API_URL}/analytics/alumni`);
   const alumni = applyAlumniFilters(all || [], req.query);
 
   const header = "Name,Email,Degree,Year,Employer,Job Title,Industry\n";
@@ -234,8 +225,7 @@ const exportCSV = async (req, res) => {
 
 // GET /export/pdf — renders a print-friendly filtered alumni table
 const exportPDF = async (req, res) => {
-  const token = req.session.user?.token;
-  const all = await fetchFromAPI(`${API_URL}/analytics/alumni`, token);
+  const all = await fetchFromAPI(`${API_URL}/analytics/alumni`);
   const alumni = applyAlumniFilters(all || [], req.query);
   res.render("export-pdf", { alumni });
 };
