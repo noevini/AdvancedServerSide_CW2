@@ -320,6 +320,7 @@ const getVerifyEmail = (req, res) => {
   if (!email) return res.redirect("/register");
   res.render("verify-email", {
     error: null,
+    success: null,
     token: null,
     csrfToken: generateCsrfToken(req),
   });
