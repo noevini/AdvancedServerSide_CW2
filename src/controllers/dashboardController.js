@@ -430,7 +430,7 @@ const postResetPassword = async (req, res) => {
     try {
       const response = await axios.put(
         `${API_URL}/auth/reset-password`,
-        { token: cleanToken, password: cleanPassword },
+        { token: cleanToken, new_password: cleanPassword },
         { timeout: 3000 },
       );
 
