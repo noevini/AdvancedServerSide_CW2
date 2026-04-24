@@ -328,7 +328,7 @@ const getVerifyEmail = (req, res) => {
 
 // POST /verify-email — call CW1 API to verify token
 const postVerifyEmail = async (req, res) => {
-  const { token, _csrf } = req.body;
+  const { _csrf } = req.body;
   const email = req.session.pendingUser;
 
   if (!_csrf || _csrf !== req.session.csrfToken)
@@ -337,7 +337,7 @@ const postVerifyEmail = async (req, res) => {
 
   if (!email) return res.redirect("/register");
 
-  const cleanToken = (token || "").trim();
+  const cleanToken = (req.session.verificationToken || "").trim();
 
   try {
     const response = await axios.post(
