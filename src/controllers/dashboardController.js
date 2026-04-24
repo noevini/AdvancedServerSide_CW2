@@ -4,9 +4,12 @@ const crypto = require("crypto");
 // Returns an error string if the password fails complexity rules, otherwise null
 const validatePassword = (password) => {
   if (password.length < 8) return "Password must be at least 8 characters.";
-  if (!/[A-Z]/.test(password)) return "Password must contain at least one uppercase letter.";
-  if (!/[0-9]/.test(password)) return "Password must contain at least one number.";
-  if (!/[^A-Za-z0-9]/.test(password)) return "Password must contain at least one special character.";
+  if (!/[A-Z]/.test(password))
+    return "Password must contain at least one uppercase letter.";
+  if (!/[0-9]/.test(password))
+    return "Password must contain at least one number.";
+  if (!/[^A-Za-z0-9]/.test(password))
+    return "Password must contain at least one special character.";
   return null;
 };
 
@@ -22,7 +25,10 @@ const apiHeaders = (token) => ({
 // Fetches data from the CW1 API — returns null on failure
 const fetchFromAPI = async (url, token) => {
   try {
-    const res = await axios.get(url, { headers: apiHeaders(token), timeout: 3000 });
+    const res = await axios.get(url, {
+      headers: apiHeaders(token),
+      timeout: 3000,
+    });
     return res.data;
   } catch {
     return null;
@@ -78,7 +84,7 @@ const postLogin = async (req, res) => {
     const response = await axios.post(
       `${API_URL}/auth/login`,
       { email: cleanEmail, password: cleanPassword },
-      { timeout: 3000 }
+      { timeout: 3000 },
     );
 
     if (response.data.token) {
@@ -114,7 +120,10 @@ const getDashboard = async (req, res) => {
     fetchFromAPI(`${API_URL}/analytics/employment`, token),
   ]);
 
-  const error = !summary && !certifications ? "Could not connect to the API. Check CW1 is running." : null;
+  const error =
+    !summary && !certifications
+      ? "Could not connect to the API. Check CW1 is running."
+      : null;
 
   res.render("dashboard", {
     user: req.session.user,
@@ -140,15 +149,19 @@ const getGraphs = async (req, res) => {
     return qs ? `${base}?${qs}` : base;
   };
 
-  const [certifications, trends, employment, courses, geographic] = await Promise.all([
-    fetchFromAPI(buildUrl(`${API_URL}/analytics/certifications`), token),
-    fetchFromAPI(buildUrl(`${API_URL}/analytics/trends`), token),
-    fetchFromAPI(buildUrl(`${API_URL}/analytics/employment`), token),
-    fetchFromAPI(buildUrl(`${API_URL}/analytics/short-courses`), token),
-    fetchFromAPI(buildUrl(`${API_URL}/analytics/geographic`), token),
-  ]);
+  const [certifications, trends, employment, courses, geographic] =
+    await Promise.all([
+      fetchFromAPI(buildUrl(`${API_URL}/analytics/certifications`), token),
+      fetchFromAPI(buildUrl(`${API_URL}/analytics/trends`), token),
+      fetchFromAPI(buildUrl(`${API_URL}/analytics/employment`), token),
+      fetchFromAPI(buildUrl(`${API_URL}/analytics/short-courses`), token),
+      fetchFromAPI(buildUrl(`${API_URL}/analytics/geographic`), token),
+    ]);
 
-  const error = !certifications && !trends ? "Could not connect to the API. Check CW1 is running." : null;
+  const error =
+    !certifications && !trends
+      ? "Could not connect to the API. Check CW1 is running."
+      : null;
 
   res.render("graphs", {
     user: req.session.user,
@@ -172,7 +185,9 @@ const getAlumni = async (req, res) => {
   res.render("alumni", {
     user: req.session.user,
     alumni: alumni || [],
-    error: !alumni ? "Could not connect to the API. Check CW1 is running." : null,
+    error: !alumni
+      ? "Could not connect to the API. Check CW1 is running."
+      : null,
   });
 };
 
@@ -199,9 +214,17 @@ const exportCSV = async (req, res) => {
 
   const header = "Name,Email,Degree,Year,Employer,Job Title,Industry\n";
   const rows = alumni.map((a) =>
-    [a.full_name, a.email, a.degree_name, a.year_completed, a.company_name, a.job_title, a.industry]
+    [
+      a.full_name,
+      a.email,
+      a.degree_name,
+      a.year_completed,
+      a.company_name,
+      a.job_title,
+      a.industry,
+    ]
       .map((v) => `"${(v || "").toString().replace(/"/g, '""')}"`)
-      .join(",")
+      .join(","),
   );
 
   res.setHeader("Content-Type", "text/csv");
@@ -241,24 +264,33 @@ const postRegister = async (req, res) => {
   const cleanPassword = (password || "").trim();
 
   if (!cleanEmail || !cleanPassword) {
-    return res.render("register", { error: "All fields are required.", csrfToken: generateCsrfToken(req) });
+    return res.render("register", {
+      error: "All fields are required.",
+      csrfToken: generateCsrfToken(req),
+    });
   }
 
   const htmlPattern = /<[^>]*>/;
   if (htmlPattern.test(cleanEmail)) {
-    return res.render("register", { error: "Invalid characters in input.", csrfToken: generateCsrfToken(req) });
+    return res.render("register", {
+      error: "Invalid characters in input.",
+      csrfToken: generateCsrfToken(req),
+    });
   }
 
   const passwordError = validatePassword(cleanPassword);
   if (passwordError) {
-    return res.render("register", { error: passwordError, csrfToken: generateCsrfToken(req) });
+    return res.render("register", {
+      error: passwordError,
+      csrfToken: generateCsrfToken(req),
+    });
   }
 
   try {
     const response = await axios.post(
       `${API_URL}/auth/register`,
       { email: cleanEmail, password: cleanPassword },
-      { timeout: 3000 }
+      { timeout: 3000 },
     );
 
     if (response.data.verification_token) {
@@ -268,7 +300,8 @@ const postRegister = async (req, res) => {
     }
   } catch (error) {
     return res.render("register", {
-      error: error.response?.data?.error || "Registration failed. Please try again.",
+      error:
+        error.response?.data?.error || "Registration failed. Please try again.",
       csrfToken: generateCsrfToken(req),
     });
   }
@@ -285,7 +318,11 @@ const postRegister = async (req, res) => {
 const getVerifyEmail = (req, res) => {
   const email = req.session.pendingUser;
   if (!email) return res.redirect("/register");
-  res.render("verify-email", { error: null, token: null, csrfToken: generateCsrfToken(req) });
+  res.render("verify-email", {
+    error: null,
+    token: null,
+    csrfToken: generateCsrfToken(req),
+  });
 };
 
 // POST /verify-email — call CW1 API to verify token
@@ -293,7 +330,8 @@ const postVerifyEmail = async (req, res) => {
   const { token, _csrf } = req.body;
   const email = req.session.pendingUser;
 
-  if (!_csrf || _csrf !== req.session.csrfToken) return res.status(403).redirect("/verify-email");
+  if (!_csrf || _csrf !== req.session.csrfToken)
+    return res.status(403).redirect("/verify-email");
   req.session.csrfToken = null;
 
   if (!email) return res.redirect("/register");
@@ -304,7 +342,7 @@ const postVerifyEmail = async (req, res) => {
     const response = await axios.post(
       `${API_URL}/auth/verify-email`,
       { token: cleanToken },
-      { timeout: 3000 }
+      { timeout: 3000 },
     );
 
     if (response.data.message) {
@@ -318,7 +356,8 @@ const postVerifyEmail = async (req, res) => {
     }
   } catch (error) {
     return res.render("verify-email", {
-      error: error.response?.data?.error || "Verification failed. Please try again.",
+      error:
+        error.response?.data?.error || "Verification failed. Please try again.",
       token: null,
       csrfToken: generateCsrfToken(req),
     });
@@ -335,14 +374,20 @@ const postVerifyEmail = async (req, res) => {
 
 // GET /reset-password
 const getResetPassword = (req, res) => {
-  res.render("reset-password", { error: null, success: null, stage: "request", csrfToken: generateCsrfToken(req) });
+  res.render("reset-password", {
+    error: null,
+    success: null,
+    stage: "request",
+    csrfToken: generateCsrfToken(req),
+  });
 };
 
 // POST /reset-password — stage 1: request reset; stage 2: confirm with token and set new password
 const postResetPassword = async (req, res) => {
   const { stage, email, token, password, _csrf } = req.body;
 
-  if (!_csrf || _csrf !== req.session.csrfToken) return res.status(403).redirect("/reset-password");
+  if (!_csrf || _csrf !== req.session.csrfToken)
+    return res.status(403).redirect("/reset-password");
   req.session.csrfToken = null;
 
   if (stage === "request") {
@@ -352,7 +397,7 @@ const postResetPassword = async (req, res) => {
       await axios.post(
         `${API_URL}/auth/request-password-reset`,
         { email: cleanEmail },
-        { timeout: 3000 }
+        { timeout: 3000 },
       );
 
       req.session.resetEmail = cleanEmail;
@@ -364,7 +409,8 @@ const postResetPassword = async (req, res) => {
       });
     } catch (error) {
       return res.render("reset-password", {
-        error: error.response?.data?.error || "Request failed. Please try again.",
+        error:
+          error.response?.data?.error || "Request failed. Please try again.",
         success: null,
         stage: "request",
         csrfToken: generateCsrfToken(req),
@@ -390,7 +436,7 @@ const postResetPassword = async (req, res) => {
       const response = await axios.put(
         `${API_URL}/auth/reset-password`,
         { token: cleanToken, password: cleanPassword },
-        { timeout: 3000 }
+        { timeout: 3000 },
       );
 
       delete req.session.resetEmail;
