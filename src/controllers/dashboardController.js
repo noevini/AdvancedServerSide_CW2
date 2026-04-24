@@ -388,13 +388,14 @@ const postResetPassword = async (req, res) => {
     const cleanEmail = (email || "").trim();
 
     try {
-      await axios.post(
+      const response = await axios.post(
         `${API_URL}/auth/request-password-reset`,
         { email: cleanEmail },
         { timeout: 3000 },
       );
 
       req.session.resetEmail = cleanEmail;
+      req.session.resetToken = response.data.reset_token;
       return res.render("reset-password", {
         error: null,
         success: "If that email is registered, a reset code has been sent.",
@@ -413,7 +414,7 @@ const postResetPassword = async (req, res) => {
   }
 
   if (stage === "confirm") {
-    const cleanToken = (token || "").trim();
+    const cleanToken = (req.session.resetToken || "").trim();
     const cleanPassword = (password || "").trim();
 
     const passwordError = validatePassword(cleanPassword);
@@ -434,6 +435,7 @@ const postResetPassword = async (req, res) => {
       );
 
       delete req.session.resetEmail;
+      delete req.session.resetToken;
       return res.render("reset-password", {
         error: null,
         success: "Password reset successfully. You can now log in.",
