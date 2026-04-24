@@ -1,8 +1,5 @@
 const axios = require("axios");
 const crypto = require("crypto");
-const bcrypt = require("bcrypt");
-
-const SALT_ROUNDS = 10;
 
 // Returns an error string if the password fails complexity rules, otherwise null
 const validatePassword = (password) => {
@@ -13,32 +10,19 @@ const validatePassword = (password) => {
   return null;
 };
 
-// Base URL and API key for the CW1 backend
+// Base URLs for the CW1 backend and API key for analytics
 const API_URL = process.env.CW1_API_URL || "http://localhost:3000";
 const API_KEY = process.env.ANALYTICS_API_KEY || "";
 
-// In-memory user store — seeded with the admin account from env
-const users = new Map();
-const adminUsername = process.env.DASHBOARD_USERNAME || "admin";
-const adminPassword = process.env.DASHBOARD_PASSWORD || "admin123";
-users.set(adminUsername, {
-  username: adminUsername,
-  email: "admin@university.ac.uk",
-  passwordHash: bcrypt.hashSync(adminPassword, SALT_ROUNDS),
-  verified: true,
-  verifyToken: null,
-  verifyTokenExpiry: null,
-  resetToken: null,
-  resetTokenExpiry: null,
+// Builds axios headers with the bearer token for authenticated requests
+const apiHeaders = (token) => ({
+  Authorization: token ? `Bearer ${token}` : undefined,
 });
 
-// Builds axios headers with the bearer token required by CW1
-const apiHeaders = () => ({ Authorization: `Bearer ${API_KEY}` });
-
 // Fetches data from the CW1 API — returns null on failure
-const fetchFromAPI = async (url) => {
+const fetchFromAPI = async (url, token) => {
   try {
-    const res = await axios.get(url, { headers: apiHeaders(), timeout: 3000 });
+    const res = await axios.get(url, { headers: apiHeaders(token), timeout: 3000 });
     return res.data;
   } catch {
     return null;
@@ -60,9 +44,9 @@ const getLogin = (req, res) => {
   res.render("login", { error: null, csrfToken: generateCsrfToken(req) });
 };
 
-// POST /login — validate input, verify CSRF, check credentials
+// POST /login — validate input, verify CSRF, call CW1 API
 const postLogin = async (req, res) => {
-  const { username, password, _csrf } = req.body;
+  const { email, password, _csrf } = req.body;
 
   if (!_csrf || _csrf !== req.session.csrfToken) {
     return res.status(403).render("login", {
@@ -72,41 +56,46 @@ const postLogin = async (req, res) => {
   }
   req.session.csrfToken = null;
 
-  const cleanUsername = (username || "").trim();
+  const cleanEmail = (email || "").trim();
   const cleanPassword = (password || "").trim();
 
-  if (!cleanUsername || !cleanPassword) {
+  if (!cleanEmail || !cleanPassword) {
     return res.render("login", {
-      error: "Username and password are required.",
+      error: "Email and password are required.",
       csrfToken: generateCsrfToken(req),
     });
   }
 
   const htmlPattern = /<[^>]*>/;
-  if (htmlPattern.test(cleanUsername) || htmlPattern.test(cleanPassword)) {
+  if (htmlPattern.test(cleanEmail) || htmlPattern.test(cleanPassword)) {
     return res.render("login", {
       error: "Invalid characters in input.",
       csrfToken: generateCsrfToken(req),
     });
   }
 
-  const user = users.get(cleanUsername);
-  const validPassword = user ? await bcrypt.compare(cleanPassword, user.passwordHash) : false;
+  try {
+    const response = await axios.post(
+      `${API_URL}/auth/login`,
+      { email: cleanEmail, password: cleanPassword },
+      { timeout: 3000 }
+    );
 
-  if (!user || !validPassword) {
+    if (response.data.token) {
+      req.session.user = { email: cleanEmail, token: response.data.token };
+      return res.redirect("/");
+    }
+  } catch (error) {
     return res.render("login", {
-      error: "Invalid username or password.",
+      error: error.response?.data?.error || "Invalid email or password.",
       csrfToken: generateCsrfToken(req),
     });
   }
 
-  if (!user.verified) {
-    req.session.pendingUser = cleanUsername;
-    return res.redirect("/verify-email");
-  }
-
-  req.session.user = { username: cleanUsername };
-  return res.redirect("/");
+  res.render("login", {
+    error: "Login failed. Please try again.",
+    csrfToken: generateCsrfToken(req),
+  });
 };
 
 // GET /logout
@@ -118,10 +107,11 @@ const logout = (req, res) => {
 
 // GET /
 const getDashboard = async (req, res) => {
+  const token = req.session.user?.token;
   const [summary, certifications, employment] = await Promise.all([
-    fetchFromAPI(`${API_URL}/analytics/summary`),
-    fetchFromAPI(`${API_URL}/analytics/certifications`),
-    fetchFromAPI(`${API_URL}/analytics/employment`),
+    fetchFromAPI(`${API_URL}/analytics/summary`, token),
+    fetchFromAPI(`${API_URL}/analytics/certifications`, token),
+    fetchFromAPI(`${API_URL}/analytics/employment`, token),
   ]);
 
   const error = !summary && !certifications ? "Could not connect to the API. Check CW1 is running." : null;
@@ -140,6 +130,7 @@ const getDashboard = async (req, res) => {
 // GET /graphs — accepts ?programme= and ?year= query params forwarded to the API
 const getGraphs = async (req, res) => {
   const { programme = "", year = "" } = req.query;
+  const token = req.session.user?.token;
 
   const buildUrl = (base) => {
     const params = new URLSearchParams();
@@ -150,11 +141,11 @@ const getGraphs = async (req, res) => {
   };
 
   const [certifications, trends, employment, courses, geographic] = await Promise.all([
-    fetchFromAPI(buildUrl(`${API_URL}/analytics/certifications`)),
-    fetchFromAPI(buildUrl(`${API_URL}/analytics/trends`)),
-    fetchFromAPI(buildUrl(`${API_URL}/analytics/employment`)),
-    fetchFromAPI(buildUrl(`${API_URL}/analytics/short-courses`)),
-    fetchFromAPI(buildUrl(`${API_URL}/analytics/geographic`)),
+    fetchFromAPI(buildUrl(`${API_URL}/analytics/certifications`), token),
+    fetchFromAPI(buildUrl(`${API_URL}/analytics/trends`), token),
+    fetchFromAPI(buildUrl(`${API_URL}/analytics/employment`), token),
+    fetchFromAPI(buildUrl(`${API_URL}/analytics/short-courses`), token),
+    fetchFromAPI(buildUrl(`${API_URL}/analytics/geographic`), token),
   ]);
 
   const error = !certifications && !trends ? "Could not connect to the API. Check CW1 is running." : null;
@@ -175,7 +166,8 @@ const getGraphs = async (req, res) => {
 
 // GET /alumni
 const getAlumni = async (req, res) => {
-  const alumni = await fetchFromAPI(`${API_URL}/analytics/alumni`);
+  const token = req.session.user?.token;
+  const alumni = await fetchFromAPI(`${API_URL}/analytics/alumni`, token);
 
   res.render("alumni", {
     user: req.session.user,
@@ -201,7 +193,8 @@ const applyAlumniFilters = (alumni, query) => {
 
 // GET /export/csv — downloads filtered alumni data as CSV
 const exportCSV = async (req, res) => {
-  const all = await fetchFromAPI(`${API_URL}/analytics/alumni`);
+  const token = req.session.user?.token;
+  const all = await fetchFromAPI(`${API_URL}/analytics/alumni`, token);
   const alumni = applyAlumniFilters(all || [], req.query);
 
   const header = "Name,Email,Degree,Year,Employer,Job Title,Industry\n";
@@ -218,7 +211,8 @@ const exportCSV = async (req, res) => {
 
 // GET /export/pdf — renders a print-friendly filtered alumni table
 const exportPDF = async (req, res) => {
-  const all = await fetchFromAPI(`${API_URL}/analytics/alumni`);
+  const token = req.session.user?.token;
+  const all = await fetchFromAPI(`${API_URL}/analytics/alumni`, token);
   const alumni = applyAlumniFilters(all || [], req.query);
   res.render("export-pdf", { alumni });
 };
@@ -231,9 +225,9 @@ const getRegister = (req, res) => {
   res.render("register", { error: null, csrfToken: generateCsrfToken(req) });
 };
 
-// POST /register — validate input, create user, generate verify token
+// POST /register — validate input, call CW1 API, redirect to email verification
 const postRegister = async (req, res) => {
-  const { username, email, password, _csrf } = req.body;
+  const { email, password, _csrf } = req.body;
 
   if (!_csrf || _csrf !== req.session.csrfToken) {
     return res.status(403).render("register", {
@@ -243,24 +237,16 @@ const postRegister = async (req, res) => {
   }
   req.session.csrfToken = null;
 
-  const cleanUsername = (username || "").trim();
   const cleanEmail = (email || "").trim();
   const cleanPassword = (password || "").trim();
 
-  if (!cleanUsername || !cleanEmail || !cleanPassword) {
+  if (!cleanEmail || !cleanPassword) {
     return res.render("register", { error: "All fields are required.", csrfToken: generateCsrfToken(req) });
   }
 
   const htmlPattern = /<[^>]*>/;
-  if (htmlPattern.test(cleanUsername) || htmlPattern.test(cleanEmail)) {
+  if (htmlPattern.test(cleanEmail)) {
     return res.render("register", { error: "Invalid characters in input.", csrfToken: generateCsrfToken(req) });
-  }
-
-  if (!cleanEmail.endsWith(".ac.uk")) {
-    return res.render("register", {
-      error: "Registration requires a university email address (.ac.uk).",
-      csrfToken: generateCsrfToken(req),
-    });
   }
 
   const passwordError = validatePassword(cleanPassword);
@@ -268,72 +254,81 @@ const postRegister = async (req, res) => {
     return res.render("register", { error: passwordError, csrfToken: generateCsrfToken(req) });
   }
 
-  if (users.has(cleanUsername)) {
-    return res.render("register", { error: "Username already taken.", csrfToken: generateCsrfToken(req) });
+  try {
+    const response = await axios.post(
+      `${API_URL}/auth/register`,
+      { email: cleanEmail, password: cleanPassword },
+      { timeout: 3000 }
+    );
+
+    if (response.data.verification_token) {
+      req.session.pendingUser = cleanEmail;
+      req.session.verificationToken = response.data.verification_token;
+      return res.redirect("/verify-email");
+    }
+  } catch (error) {
+    return res.render("register", {
+      error: error.response?.data?.error || "Registration failed. Please try again.",
+      csrfToken: generateCsrfToken(req),
+    });
   }
 
-  const verifyToken = crypto.randomBytes(3).toString("hex").toUpperCase();
-  const passwordHash = await bcrypt.hash(cleanPassword, SALT_ROUNDS);
-
-  users.set(cleanUsername, {
-    username: cleanUsername,
-    email: cleanEmail,
-    passwordHash,
-    verified: false,
-    verifyToken,
-    verifyTokenExpiry: Date.now() + 15 * 60 * 1000,
-    resetToken: null,
-    resetTokenExpiry: null,
+  res.render("register", {
+    error: "Registration failed. Please try again.",
+    csrfToken: generateCsrfToken(req),
   });
-
-  req.session.pendingUser = cleanUsername;
-  res.redirect("/verify-email");
 };
 
 // ── VERIFY EMAIL ──────────────────────────────────────────
 
 // GET /verify-email
 const getVerifyEmail = (req, res) => {
-  const username = req.session.pendingUser;
-  if (!username || !users.has(username)) return res.redirect("/login");
-  const user = users.get(username);
-  res.render("verify-email", { error: null, token: user.verifyToken, csrfToken: generateCsrfToken(req) });
+  const email = req.session.pendingUser;
+  if (!email) return res.redirect("/register");
+  res.render("verify-email", { error: null, token: null, csrfToken: generateCsrfToken(req) });
 };
 
-// POST /verify-email — compare token and mark account as verified
-const postVerifyEmail = (req, res) => {
+// POST /verify-email — call CW1 API to verify token
+const postVerifyEmail = async (req, res) => {
   const { token, _csrf } = req.body;
-  const username = req.session.pendingUser;
+  const email = req.session.pendingUser;
 
   if (!_csrf || _csrf !== req.session.csrfToken) return res.status(403).redirect("/verify-email");
   req.session.csrfToken = null;
 
-  if (!username || !users.has(username)) return res.redirect("/login");
+  if (!email) return res.redirect("/register");
 
-  const user = users.get(username);
+  const cleanToken = (token || "").trim();
 
-  if (Date.now() > user.verifyTokenExpiry) {
+  try {
+    const response = await axios.post(
+      `${API_URL}/auth/verify-email`,
+      { token: cleanToken },
+      { timeout: 3000 }
+    );
+
+    if (response.data.message) {
+      delete req.session.pendingUser;
+      delete req.session.verificationToken;
+      return res.render("verify-email", {
+        error: null,
+        success: "Email verified! You can now log in.",
+        csrfToken: generateCsrfToken(req),
+      });
+    }
+  } catch (error) {
     return res.render("verify-email", {
-      error: "Verification code has expired. Please register again.",
+      error: error.response?.data?.error || "Verification failed. Please try again.",
       token: null,
       csrfToken: generateCsrfToken(req),
     });
   }
 
-  if (!token || token.trim().toUpperCase() !== user.verifyToken) {
-    return res.render("verify-email", {
-      error: "Invalid verification code. Please try again.",
-      token: user.verifyToken,
-      csrfToken: generateCsrfToken(req),
-    });
-  }
-
-  user.verified = true;
-  user.verifyToken = null;
-  user.verifyTokenExpiry = null;
-  delete req.session.pendingUser;
-  req.session.user = { username };
-  res.redirect("/");
+  res.render("verify-email", {
+    error: "Verification failed. Please try again.",
+    token: null,
+    csrfToken: generateCsrfToken(req),
+  });
 };
 
 // ── RESET PASSWORD ────────────────────────────────────────
@@ -343,7 +338,7 @@ const getResetPassword = (req, res) => {
   res.render("reset-password", { error: null, success: null, stage: "request", csrfToken: generateCsrfToken(req) });
 };
 
-// POST /reset-password — stage 1: issue token; stage 2: set new password
+// POST /reset-password — stage 1: request reset; stage 2: confirm with token and set new password
 const postResetPassword = async (req, res) => {
   const { stage, email, token, password, _csrf } = req.body;
 
@@ -351,58 +346,68 @@ const postResetPassword = async (req, res) => {
   req.session.csrfToken = null;
 
   if (stage === "request") {
-    const user = Array.from(users.values()).find((u) => u.email === (email || "").trim());
-    const resetToken = user ? crypto.randomBytes(3).toString("hex").toUpperCase() : null;
-    if (user && resetToken) {
-      user.resetToken = resetToken;
-      user.resetTokenExpiry = Date.now() + 30 * 60 * 1000;
-      req.session.resetEmail = user.email;
-    }
-    return res.render("reset-password", {
-      error: null,
-      success: "If that email is registered, a reset code has been issued.",
-      stage: "confirm",
-      resetToken: user ? resetToken : null,
-      csrfToken: generateCsrfToken(req),
-    });
-  }
+    const cleanEmail = (email || "").trim();
 
-  if (stage === "confirm") {
-    const user = Array.from(users.values()).find((u) => u.email === req.session.resetEmail);
+    try {
+      await axios.post(
+        `${API_URL}/auth/request-password-reset`,
+        { email: cleanEmail },
+        { timeout: 3000 }
+      );
 
-    if (!user || !token || token.trim().toUpperCase() !== user.resetToken || Date.now() > user.resetTokenExpiry) {
+      req.session.resetEmail = cleanEmail;
       return res.render("reset-password", {
-        error: "Invalid or expired reset code.",
-        success: null,
+        error: null,
+        success: "If that email is registered, a reset code has been sent.",
         stage: "confirm",
-        resetToken: null,
+        csrfToken: generateCsrfToken(req),
+      });
+    } catch (error) {
+      return res.render("reset-password", {
+        error: error.response?.data?.error || "Request failed. Please try again.",
+        success: null,
+        stage: "request",
         csrfToken: generateCsrfToken(req),
       });
     }
+  }
 
+  if (stage === "confirm") {
+    const cleanToken = (token || "").trim();
     const cleanPassword = (password || "").trim();
+
     const passwordError = validatePassword(cleanPassword);
     if (passwordError) {
       return res.render("reset-password", {
         error: passwordError,
         success: null,
         stage: "confirm",
-        resetToken: null,
         csrfToken: generateCsrfToken(req),
       });
     }
 
-    user.passwordHash = await bcrypt.hash(cleanPassword, SALT_ROUNDS);
-    user.resetToken = null;
-    user.resetTokenExpiry = null;
-    delete req.session.resetEmail;
+    try {
+      const response = await axios.put(
+        `${API_URL}/auth/reset-password`,
+        { token: cleanToken, password: cleanPassword },
+        { timeout: 3000 }
+      );
 
-    return res.render("reset-password", {
-      error: null,
-      success: "Password updated. You can now log in.",
-      stage: "done",
-      csrfToken: generateCsrfToken(req),
-    });
+      delete req.session.resetEmail;
+      return res.render("reset-password", {
+        error: null,
+        success: "Password reset successfully. You can now log in.",
+        stage: "done",
+        csrfToken: generateCsrfToken(req),
+      });
+    } catch (error) {
+      return res.render("reset-password", {
+        error: error.response?.data?.error || "Reset failed. Please try again.",
+        success: null,
+        stage: "confirm",
+        csrfToken: generateCsrfToken(req),
+      });
+    }
   }
 
   res.redirect("/reset-password");

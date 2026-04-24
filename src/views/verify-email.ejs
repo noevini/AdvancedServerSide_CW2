@@ -17,23 +17,25 @@
       <div class="alert alert-error"><%= error %></div>
     <% } %>
 
-    <% if (token) { %>
+    <% if (success) { %>
       <div class="alert" style="background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;margin-bottom:1rem;font-size:0.9rem;">
-        Your verification code is: <strong style="font-size:1.1rem;letter-spacing:0.1em;"><%= token %></strong>
-        <br/><small style="opacity:0.75;">(In production this would be sent to your email)</small>
+        <%= success %>
+        <br/><a href="/login" style="color:#166534;font-weight:600;">Return to login</a>
       </div>
-    <% } %>
+    <% } else { %>
 
     <form action="/verify-email" method="POST" class="login-form">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
 
       <div class="form-group">
         <label for="token">Verification Code</label>
-        <input type="text" id="token" name="token" placeholder="Enter code" required autocomplete="one-time-code" style="letter-spacing:0.15em;text-transform:uppercase;" />
+        <input type="text" id="token" name="token" placeholder="Paste the code from your email" required />
       </div>
 
       <button type="submit" class="btn-login">Verify Email</button>
     </form>
+
+    <% } %>
 
   </div>
 
